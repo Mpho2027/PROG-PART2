@@ -1,0 +1,15 @@
+@model int
+<div class="d-flex flex-wrap gap-1 justify-content-end">
+    <a asp-area="Organiser" asp-controller="Categories" asp-action="Index" asp-route-eventId="@Model" class="btn btn-sm btn-light" title="Categories">
+        <span class="material-symbols-rounded" aria-hidden="true">format_list_bulleted</span><span class="visually-hidden">Categories</span>
+    </a>
+    <a asp-area="Organiser" asp-controller="Enrolments" asp-action="Index" asp-route-eventId="@Model" class="btn btn-sm btn-light" title="Enrolments">
+        <span class="material-symbols-rounded" aria-hidden="true">groups</span><span class="visually-hidden">Enrolments</span>
+    </a>
+    <a asp-area="Organiser" asp-controller="Results" asp-action="Index" asp-route-eventId="@Model" class="btn btn-sm btn-light" title="Results">
+        <span class="material-symbols-rounded" aria-hidden="true">timer</span><span class="visually-hidden">Results</span>
+    </a>
+    <a asp-area="Organiser" asp-controller="Events" asp-action="Edit" asp-route-id="@Model" class="btn btn-sm btn-light" title="Edit event">
+        <span class="material-symbols-rounded" aria-hidden="true">edit</span><span class="visually-hidden">Edit event</span>
+    </a>
+</div>

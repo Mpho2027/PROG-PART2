@@ -1,0 +1,111 @@
+@using RaceDay.Web.Infrastructure
+@model List<OrganiserEventSummaryDto>
+@{
+    ViewData["Title"] = "Dashboard";
+    var upcoming = Model.Where(e => e.IsUpcoming).ToList();
+    var next = upcoming.FirstOrDefault();
+    var totalEnrolments = Model.Sum(e => e.EnrolmentCount);
+    var resultsCaptured = Model.Sum(e => e.ResultsCaptured);
+}
+
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">Organiser dashboard</span>
+        <h1 class="race-heading">Hi, @UserSession.User?.FirstName</h1>
+        <p>Your events, entries and race dates at a glance.</p>
+    </div>
+    <a asp-controller="Events" asp-action="Create" class="btn btn-primary btn-icon">
+        <span class="material-symbols-rounded" aria-hidden="true">add</span>Create event
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <span class="stat-card__icon"><span class="material-symbols-rounded" aria-hidden="true">event</span></span>
+            <div><div class="stat-card__value">@Model.Count</div><div class="stat-card__label">Events created</div></div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <span class="stat-card__icon"><span class="material-symbols-rounded" aria-hidden="true">event_upcoming</span></span>
+            <div><div class="stat-card__value">@upcoming.Count</div><div class="stat-card__label">Upcoming events</div></div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <span class="stat-card__icon"><span class="material-symbols-rounded" aria-hidden="true">groups</span></span>
+            <div><div class="stat-card__value">@totalEnrolments</div><div class="stat-card__label">Total enrolments</div></div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <span class="stat-card__icon"><span class="material-symbols-rounded" aria-hidden="true">timer</span></span>
+            <div><div class="stat-card__value">@resultsCaptured</div><div class="stat-card__label">Results captured</div></div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="panel empty-state">
+        <span class="material-symbols-rounded" aria-hidden="true">add_location_alt</span>
+        <h2>Create your first event</h2>
+        <p class="mb-3">Add the event details, then set up distance or age categories so participants can enter.</p>
+        <a asp-controller="Events" asp-action="Create" class="btn btn-primary">Create event</a>
+    </div>
+}
+else
+{
+    @if (next is not null)
+    {
+        <div class="panel mb-4 d-flex flex-wrap align-items-center gap-3 justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <span class="stat-card__icon"><span class="material-symbols-rounded" aria-hidden="true">flag</span></span>
+                <div>
+                    <div class="text-muted small fw-semibold text-uppercase">Next event &middot; @Display.DaysAway(next.EventDate)</div>
+                    <div class="h4 mb-0">@next.EventName</div>
+                    <div class="text-muted">@Display.Date(next.EventDate) &middot; @next.Location</div>
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="stat-card__value">@next.EnrolmentCount<span class="text-muted fs-5"> / @next.Capacity</span></div>
+                <div class="stat-card__label">entries so far</div>
+            </div>
+        </div>
+    }
+
+    <section class="panel">
+        <h2 class="panel__title"><span class="material-symbols-rounded" aria-hidden="true">list_alt</span>My events</h2>
+        <div class="table-responsive">
+            <table class="table rd-table">
+                <thead>
+                    <tr><th>Event</th><th>Date</th><th>Type</th><th>Categories</th><th>Enrolments</th><th>Results</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-area="" asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId" class="fw-semibold">@e.EventName</a>
+                                <div class="small text-muted">@e.Location</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@Display.ShortDate(e.EventDate)</div>
+                                <span class="status-badge status-badge--@(e.IsUpcoming ? "Upcoming" : "Past")">@(e.IsUpcoming ? Display.DaysAway(e.EventDate) : "Completed")</span>
+                            </td>
+                            <td><partial name="_EventTypeBadge" model="e.EventType" /></td>
+                            <td>@e.CategoryCount</td>
+                            <td class="capacity">
+                                <div class="progress mb-1"><div class="progress-bar" style="width: @(e.Capacity == 0 ? 0 : Math.Min(100, e.EnrolmentCount * 100 / e.Capacity))%"></div></div>
+                                <small>@e.EnrolmentCount of @e.Capacity places</small>
+                            </td>
+                            <td>@(e.IsUpcoming ? "-" : $"{e.ResultsCaptured} of {e.EnrolmentCount}")</td>
+                            <td><partial name="_EventActions" model="e.EventId" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
