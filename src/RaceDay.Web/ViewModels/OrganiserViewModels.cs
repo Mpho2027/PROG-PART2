@@ -144,3 +144,37 @@ public class EventEnrolmentsViewModel
     public int? CategoryId { get; set; }
     public string? Status { get; set; }
 }
+
+/// <summary>One participant's row on the results entry page.</summary>
+public class ResultRowViewModel
+{
+    public int EnrolmentId { get; set; }
+    public string ParticipantName { get; set; } = string.Empty;
+    public string? BibNumber { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+
+    [RegularExpression(@"^([0-9]|[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$", ErrorMessage = "Use hh:mm:ss, e.g. 00:52:14.")]
+    [Display(Name = "Finish time")]
+    public string? FinishTime { get; set; }
+
+    [Range(1, 100000, ErrorMessage = "Position must be 1 or more.")]
+    public int? Position { get; set; }
+
+    // Values already saved in the API, so only changed rows are sent again.
+    public string? SavedFinishTime { get; set; }
+    public int? SavedPosition { get; set; }
+
+    public bool IsSaved => SavedFinishTime is not null && SavedPosition is not null;
+    public bool IsEmpty => string.IsNullOrWhiteSpace(FinishTime) && Position is null;
+    public bool HasChanged => FinishTime?.Trim() != SavedFinishTime || Position != SavedPosition;
+}
+
+public class ResultsEntryViewModel
+{
+    public EventDto Event { get; set; } = new();
+    public List<ResultRowViewModel> Rows { get; set; } = new();
+
+    /// <summary>The API only accepts results on or after the event date; the form is disabled before then.</summary>
+    public bool CanCapture => Event.EventDate.Date <= DateTime.Today;
+}

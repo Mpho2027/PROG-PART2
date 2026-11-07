@@ -1,0 +1,107 @@
+@using RaceDay.Web.Infrastructure
+@model ResultsEntryViewModel
+@{
+    var ev = Model.Event;
+    ViewData["Title"] = $"Results for {ev.EventName}";
+    var captured = Model.Rows.Count(r => r.IsSaved);
+}
+
+<a asp-controller="Events" asp-action="Index" class="breadcrumb-link"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>My events</a>
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">@ev.EventName &middot; @Display.ShortDate(ev.EventDate)</span>
+        <h1 class="race-heading">Results</h1>
+        <p>Enter each finisher's time and position. Saved results are published to participants straight away.</p>
+    </div>
+    <partial name="_EventActions" model="ev.EventId" />
+</div>
+
+@if (!Model.CanCapture)
+{
+    <div class="alert alert-info" role="status">
+        <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
+        <span>Results can be captured once the event has taken place on @Display.Date(ev.EventDate).</span>
+    </div>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="panel empty-state">
+        <span class="material-symbols-rounded" aria-hidden="true">timer_off</span>
+        <h2>No participants to score</h2>
+        <p class="mb-0">Results can be entered for confirmed or pending enrolments once people have entered this event.</p>
+    </div>
+}
+else
+{
+    <form asp-action="Index" asp-route-eventId="@ev.EventId" method="post" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <section class="panel">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <h2 class="panel__title mb-0"><span class="material-symbols-rounded" aria-hidden="true">timer</span>Finish times</h2>
+                <span class="text-muted fw-semibold">@captured of @Model.Rows.Count captured</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table rd-table">
+                    <thead>
+                        <tr><th>Participant</th><th>Category</th><th>Bib</th><th>Finish time (hh:mm:ss)</th><th>Position</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Rows.Count; i++)
+                        {
+                            var row = Model.Rows[i];
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold">@row.ParticipantName</span>
+                                    <input type="hidden" asp-for="Rows[i].EnrolmentId" />
+                                    <input type="hidden" asp-for="Rows[i].ParticipantName" />
+                                    <input type="hidden" asp-for="Rows[i].BibNumber" />
+                                    <input type="hidden" asp-for="Rows[i].CategoryName" />
+                                    <input type="hidden" asp-for="Rows[i].Status" />
+                                    <input type="hidden" asp-for="Rows[i].SavedFinishTime" />
+                                    <input type="hidden" asp-for="Rows[i].SavedPosition" />
+                                </td>
+                                <td>@row.CategoryName</td>
+                                <td><span class="bib">@row.BibNumber</span></td>
+                                <td>
+                                    <label class="visually-hidden" for="Rows_@(i)__FinishTime">Finish time for @row.ParticipantName</label>
+                                    <input asp-for="Rows[i].FinishTime" class="form-control form-control-sm time-input" placeholder="00:00:00"
+                                           inputmode="numeric" disabled="@(!Model.CanCapture)" />
+                                    <span asp-validation-for="Rows[i].FinishTime" class="field-error"></span>
+                                </td>
+                                <td>
+                                    <label class="visually-hidden" for="Rows_@(i)__Position">Position for @row.ParticipantName</label>
+                                    <input asp-for="Rows[i].Position" type="number" min="1" class="form-control form-control-sm position-input"
+                                           disabled="@(!Model.CanCapture)" />
+                                    <span asp-validation-for="Rows[i].Position" class="field-error"></span>
+                                </td>
+                                <td>
+                                    @if (row.IsSaved)
+                                    {
+                                        <partial name="_StatusBadge" model="@("Finished")" />
+                                    }
+                                    else
+                                    {
+                                        <partial name="_StatusBadge" model="row.Status" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (Model.CanCapture)
+            {
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="submit" class="btn btn-primary btn-lg btn-icon">
+                        <span class="material-symbols-rounded" aria-hidden="true">publish</span>Save and publish results
+                    </button>
+                </div>
+            }
+        </section>
+    </form>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
