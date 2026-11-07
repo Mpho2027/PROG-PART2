@@ -1,27 +1,59 @@
+using RaceDay.Web.Filters;
+using RaceDay.Web.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+// ---------- Session management (keeps the logged-in user and their API session between requests) ----------
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.Name = ".RaceDay.Web.Session";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+});
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<UserSession>();
+
+// ---------- RaceDay API client ----------
+// UseCookies = false: the shared HttpClient must never keep cookies, otherwise users would share API sessions.
+// ApiSessionCookieHandler adds the current user's own API session cookie to each request instead.
+var apiBaseUrl = builder.Configuration["RaceDayApi:BaseUrl"]
+    ?? throw new InvalidOperationException("RaceDayApi:BaseUrl is not configured.");
+builder.Services.AddTransient<ApiSessionCookieHandler>();
+builder.Services.AddHttpClient<RaceDayApiClient>(client =>
+    {
+        client.BaseAddress = new Uri(apiBaseUrl.EndsWith('/') ? apiBaseUrl : apiBaseUrl + "/");
+        client.Timeout = TimeSpan.FromSeconds(30);
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false })
+    .AddHttpMessageHandler<ApiSessionCookieHandler>();
+
+builder.Services.AddControllersWithViews(options => options.Filters.Add<ApiExceptionFilter>());
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+app.UseStatusCodePagesWithReExecute("/Home/StatusCode", "?code={0}");
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
+app.UseSession();
 app.UseAuthorization();
 
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+/// <summary>Exposed so the test project can host the MVC app with WebApplicationFactory.</summary>
+public partial class Program { }
