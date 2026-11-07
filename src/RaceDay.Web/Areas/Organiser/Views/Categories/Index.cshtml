@@ -1,0 +1,66 @@
+@using RaceDay.Web.Infrastructure
+@model CategoriesPageViewModel
+@{
+    var ev = Model.Event;
+    ViewData["Title"] = $"Categories for {ev.EventName}";
+}
+
+<a asp-controller="Events" asp-action="Index" class="breadcrumb-link"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>My events</a>
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">@ev.EventName &middot; @Display.ShortDate(ev.EventDate)</span>
+        <h1 class="race-heading">Categories</h1>
+        <p>Participants choose one of these categories when they enter.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <partial name="_EventActions" model="ev.EventId" />
+        <a asp-action="Create" asp-route-eventId="@ev.EventId" class="btn btn-primary btn-icon">
+            <span class="material-symbols-rounded" aria-hidden="true">add</span>Add category
+        </a>
+    </div>
+</div>
+
+@if (Model.Categories.Count == 0)
+{
+    <div class="panel empty-state">
+        <span class="material-symbols-rounded" aria-hidden="true">format_list_bulleted</span>
+        <h2>No categories yet</h2>
+        <p class="mb-3">Add at least one category, such as "5km Fun Run" or "Under 20", so participants can enter.</p>
+        <a asp-action="Create" asp-route-eventId="@ev.EventId" class="btn btn-primary">Add category</a>
+    </div>
+}
+else
+{
+    <section class="panel">
+        <div class="table-responsive">
+            <table class="table rd-table">
+                <thead>
+                    <tr><th>Category</th><th>Distance</th><th>Ages</th><th>Entry fee</th><th>Places taken</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Categories)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@c.CategoryName</td>
+                            <td>@(c.DistanceKm.HasValue ? Display.Km(c.DistanceKm.Value) : "-")</td>
+                            <td>@(string.IsNullOrEmpty(Display.AgeRange(c.MinAge, c.MaxAge)) ? "All ages" : Display.AgeRange(c.MinAge, c.MaxAge))</td>
+                            <td>@Display.Rand(c.EntryFee)</td>
+                            <td class="capacity">
+                                <div class="progress mb-1"><div class="progress-bar" style="width: @(Math.Min(100, c.EnrolledCount * 100 / Math.Max(1, c.MaxParticipants)))%"></div></div>
+                                <small>@c.EnrolledCount of @c.MaxParticipants</small>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Edit" asp-route-id="@c.CategoryId" asp-route-eventId="@ev.EventId" class="btn btn-sm btn-light">Edit</a>
+                                <form asp-action="Delete" asp-route-id="@c.CategoryId" asp-route-eventId="@ev.EventId" method="post" class="d-inline"
+                                      data-confirm="Remove @c.CategoryName?@(c.EnrolledCount > 0 ? $" {c.EnrolledCount} enrolment(s) in this category will also be removed." : "")">
+                                    <input type="hidden" name="categoryName" value="@c.CategoryName" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}

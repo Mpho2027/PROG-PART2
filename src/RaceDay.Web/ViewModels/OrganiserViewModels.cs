@@ -64,3 +64,73 @@ public class EventFormViewModel
         HasBanner = e.HasBanner
     };
 }
+
+/// <summary>Add / edit category form. Use a distance (e.g. 10km), an age range (e.g. Under 20) or both.</summary>
+public class CategoryFormViewModel : IValidatableObject
+{
+    public int EventId { get; set; }
+    public int? CategoryId { get; set; }
+    public string EventName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Enter the category name.")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "The category name must be between 2 and 100 characters.")]
+    [Display(Name = "Category name")]
+    public string CategoryName { get; set; } = string.Empty;
+
+    [Range(0.1, 999.99, ErrorMessage = "The distance must be between 0.1 and 999.99 km.")]
+    [Display(Name = "Distance (km)")]
+    public decimal? DistanceKm { get; set; }
+
+    [Range(0, 120, ErrorMessage = "Minimum age must be between 0 and 120.")]
+    [Display(Name = "Minimum age")]
+    public int? MinAge { get; set; }
+
+    [Range(0, 120, ErrorMessage = "Maximum age must be between 0 and 120.")]
+    [Display(Name = "Maximum age")]
+    public int? MaxAge { get; set; }
+
+    [Required(ErrorMessage = "Enter how many people can enter.")]
+    [Range(1, 100000, ErrorMessage = "Places must be between 1 and 100 000.")]
+    [Display(Name = "Places available")]
+    public int? MaxParticipants { get; set; } = 100;
+
+    [Required(ErrorMessage = "Enter the entry fee (0 for free).")]
+    [Range(0, 999999.99, ErrorMessage = "The entry fee cannot be negative.")]
+    [Display(Name = "Entry fee (R)")]
+    public decimal? EntryFee { get; set; } = 0;
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (MinAge.HasValue && MaxAge.HasValue && MinAge > MaxAge)
+            yield return new ValidationResult("Minimum age cannot be greater than maximum age.", new[] { nameof(MinAge) });
+    }
+
+    public object ToRequest() => new
+    {
+        categoryName = CategoryName.Trim(),
+        distanceKm = DistanceKm,
+        minAge = MinAge,
+        maxAge = MaxAge,
+        maxParticipants = MaxParticipants,
+        entryFee = EntryFee
+    };
+
+    public static CategoryFormViewModel From(CategoryDto c) => new()
+    {
+        EventId = c.EventId,
+        CategoryId = c.CategoryId,
+        EventName = c.EventName,
+        CategoryName = c.CategoryName,
+        DistanceKm = c.DistanceKm,
+        MinAge = c.MinAge,
+        MaxAge = c.MaxAge,
+        MaxParticipants = c.MaxParticipants,
+        EntryFee = c.EntryFee
+    };
+}
+
+public class CategoriesPageViewModel
+{
+    public EventDto Event { get; set; } = new();
+    public IReadOnlyList<CategoryDto> Categories { get; set; } = Array.Empty<CategoryDto>();
+}
