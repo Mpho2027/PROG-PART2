@@ -1,15 +1,20 @@
-name: RaceDay API CI
+name: RaceDay CI
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "part3-mvc" ]
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
   build-and-test:
+    name: Build API and MVC, run all tests
     runs-on: ubuntu-latest
+
+    env:
+      # Lets the Azure Blob Storage tests run against the Azurite emulator started below.
+      RACEDAY_TEST_BLOB_CONNECTION: UseDevelopmentStorage=true
 
     steps:
       - name: Check out code
@@ -20,13 +25,16 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Start Azurite (Azure Blob Storage emulator)
+        run: docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:3.33.0 azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck --loose
+
       - name: Restore dependencies
         run: dotnet restore RaceDay.sln
 
+      # Builds RaceDay.Api, RaceDay.Web (MVC) and both test projects.
       - name: Build
         run: dotnet build RaceDay.sln --configuration Release --no-restore
 
-      # Tests host the real API in memory with an EF Core in-memory database, so no SQL Server is needed.
       - name: Run tests
         run: dotnet test RaceDay.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
@@ -36,3 +44,66 @@ jobs:
         with:
           name: test-results
           path: "**/TestResults/*.trx"
+
+  docker:
+    name: Docker build and smoke test
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Start API, MVC app and Azurite with docker compose
+        run: docker compose up -d --build
+
+      - name: Wait for the containers
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5104/swagger/v1/swagger.json > /dev/null && curl -sf http://localhost:8080/ > /dev/null; then
+              echo "API and MVC app are up"; exit 0
+            fi
+            sleep 3
+          done
+          echo "Containers did not start in time"; exit 1
+
+      - name: MVC home page renders through the API
+        run: curl -sf http://localhost:8080/ | grep -q "Find your next"
+
+      - name: Banner upload goes through the API into Blob Storage and back through MVC
+        run: |
+          set -e
+          api=http://localhost:5104
+          curl -sf -X POST $api/api/auth/register -H "Content-Type: application/json" \
+            -d '{"fullName":"CI Organiser","email":"ci.organiser@example.com","password":"CiCheck2026!","role":"Organiser"}' > /dev/null
+          curl -sf -c jar.txt -X POST $api/api/auth/login -H "Content-Type: application/json" \
+            -d '{"email":"ci.organiser@example.com","password":"CiCheck2026!"}' > /dev/null
+          date=$(date -d '+30 days' +%F)
+          id=$(curl -sf -b jar.txt -X POST $api/api/events -H "Content-Type: application/json" \
+            -d "{\"eventName\":\"CI Smoke Test Run\",\"eventDate\":\"$date\",\"location\":\"Pretoria\",\"distanceKm\":10,\"eventType\":\"Run\"}" | python3 -c "import sys,json; print(json.load(sys.stdin)['eventId'])")
+          printf '\x89PNG\r\n\x1a\n0123456789' > banner.png
+          curl -sf -b jar.txt -X PUT $api/api/events/$id/banner -F "file=@banner.png;type=image/png" > /dev/null
+          type=$(curl -sf -o fetched.png -w '%{content_type}' http://localhost:8080/Events/Banner/$id)
+          echo "Banner served by MVC as $type"
+          test "$type" = "image/png"
+          cmp banner.png fetched.png
+
+      - name: README docker run command starts the MVC container on its own
+        run: |
+          docker build -t raceday-web .
+          docker run -d -p 8081:8080 --add-host=host.docker.internal:host-gateway \
+            -e RaceDayApi__BaseUrl=http://host.docker.internal:5104/ --name raceday-web raceday-web
+          for i in $(seq 1 30); do curl -sf http://localhost:8081/ > /dev/null && break; sleep 2; done
+          curl -sf http://localhost:8081/ | grep -q "CI Smoke Test Run"
+
+      - name: Container logs
+        if: failure()
+        run: |
+          docker compose logs
+          docker logs raceday-web || true
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker rm -f raceday-web || true
+          docker compose down
