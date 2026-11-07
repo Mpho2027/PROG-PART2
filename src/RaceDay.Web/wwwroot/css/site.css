@@ -325,6 +325,7 @@ a:hover { color: var(--rd-orange); }
     font-size: 1.05rem;
     letter-spacing: .04em;
     background: #fff;
+    color: var(--rd-navy);
     border: 2px solid var(--rd-navy);
     border-radius: 6px;
     padding: 0 .45rem;
