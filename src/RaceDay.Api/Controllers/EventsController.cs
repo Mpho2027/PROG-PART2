@@ -35,18 +35,39 @@ public class EventsController : RaceDayControllerBase
         return CreatedAtAction(nameof(GetById), new { id = ev.EventId }, EventDto.From(ev));
     }
 
-    /// <summary>Lists all upcoming events.</summary>
-    /// <remarks>Events are ordered by date. Set includePast=true to include events that have already taken place.</remarks>
-    /// <param name="includePast">Include events dated before today.</param>
+    /// <summary>Lists all upcoming events, with optional filters.</summary>
+    /// <remarks>
+    /// Events are ordered by date. Set includePast=true to include events that have already taken place.
+    /// Filter by eventType (Run, Walk, Cycle), by search text (matched against name, location and description)
+    /// and by a date range (from / to).
+    /// </remarks>
     /// <response code="200">Array of events.</response>
+    /// <response code="400">A filter value is invalid, e.g. from is after to.</response>
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IEnumerable<EventDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll([FromQuery] bool includePast = false)
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAll([FromQuery] EventQuery filter)
     {
+        if (filter.From.HasValue && filter.To.HasValue && filter.From.Value.Date > filter.To.Value.Date)
+            return BadRequestMessage("The 'from' date cannot be after the 'to' date.");
+
         var query = _db.Events.Include(e => e.Organiser).AsNoTracking();
-        if (!includePast)
+        if (!filter.IncludePast)
             query = query.Where(e => e.EventDate >= Today);
+        if (filter.EventType.HasValue)
+            query = query.Where(e => e.EventType == filter.EventType.Value);
+        if (filter.From.HasValue)
+            query = query.Where(e => e.EventDate >= filter.From.Value.Date);
+        if (filter.To.HasValue)
+            query = query.Where(e => e.EventDate <= filter.To.Value.Date);
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            // Lower-casing both sides keeps the search case-insensitive on every database provider.
+            var text = filter.Search.Trim().ToLower();
+            query = query.Where(e => e.EventName.ToLower().Contains(text) || e.Location.ToLower().Contains(text)
+                                     || (e.Description != null && e.Description.ToLower().Contains(text)));
+        }
 
         var events = await query.OrderBy(e => e.EventDate).ThenBy(e => e.EventName).ToListAsync();
         return Ok(events.Select(EventDto.From));

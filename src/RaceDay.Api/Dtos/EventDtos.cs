@@ -33,6 +33,26 @@ public class EventRequest
     public EventType? EventType { get; set; }
 }
 
+/// <summary>Optional filters for the event list. All of them can be combined.</summary>
+public class EventQuery
+{
+    /// <summary>Include events dated before today.</summary>
+    public bool IncludePast { get; set; }
+
+    /// <summary>Only events of this type (Run, Walk or Cycle).</summary>
+    public EventType? EventType { get; set; }
+
+    /// <summary>Text to look for in the event name, location or description.</summary>
+    [StringLength(100)]
+    public string? Search { get; set; }
+
+    /// <summary>Only events on or after this date (yyyy-MM-dd).</summary>
+    public DateTime? From { get; set; }
+
+    /// <summary>Only events on or before this date (yyyy-MM-dd).</summary>
+    public DateTime? To { get; set; }
+}
+
 /// <summary>An event as returned by the API.</summary>
 public class EventDto
 {

@@ -178,10 +178,68 @@ public class EventManagementTests : ApiTestBase
     }
 
     [Fact]
+    public async Task GetEvents_FiltersByEventType()
+    {
+        var (organiser, _) = await LoggedInAsync("Organiser");
+        var walk = await CreateNamedEventAsync(organiser, $"Walk {Guid.NewGuid():N}", "Walk");
+        var cycle = await CreateNamedEventAsync(organiser, $"Cycle {Guid.NewGuid():N}", "Cycle");
+
+        var walks = await NewClient().GetFromJsonAsync<List<EventDto>>("/api/events?eventType=Walk", Json);
+
+        Assert.Contains(walks!, e => e.EventId == walk.EventId);
+        Assert.DoesNotContain(walks!, e => e.EventId == cycle.EventId);
+        Assert.All(walks!, e => Assert.Equal(EventType.Walk, e.EventType));
+    }
+
+    [Fact]
+    public async Task GetEvents_SearchMatchesNameOrLocation_IgnoringCase()
+    {
+        var (organiser, _) = await LoggedInAsync("Organiser");
+        var marker = Guid.NewGuid().ToString("N")[..8];
+        var ev = await CreateNamedEventAsync(organiser, $"Hillcrest Classic {marker}", "Run");
+
+        var byName = await NewClient().GetFromJsonAsync<List<EventDto>>($"/api/events?search=HILLCREST%20classic%20{marker}", Json);
+        var other = await NewClient().GetFromJsonAsync<List<EventDto>>($"/api/events?search=nothing-like-{marker}", Json);
+
+        Assert.Contains(byName!, e => e.EventId == ev.EventId);
+        Assert.DoesNotContain(other!, e => e.EventId == ev.EventId);
+    }
+
+    [Fact]
+    public async Task GetEvents_FiltersByDateRange()
+    {
+        var (organiser, _) = await LoggedInAsync("Organiser");
+        var soon = await CreateEventAsync(organiser, daysFromToday: 5);
+        var later = await CreateEventAsync(organiser, daysFromToday: 90);
+        var from = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd");
+        var to = DateTime.Today.AddDays(10).ToString("yyyy-MM-dd");
+
+        var inRange = await NewClient().GetFromJsonAsync<List<EventDto>>($"/api/events?from={from}&to={to}", Json);
+
+        Assert.Contains(inRange!, e => e.EventId == soon.EventId);
+        Assert.DoesNotContain(inRange!, e => e.EventId == later.EventId);
+    }
+
+    [Fact]
+    public async Task GetEvents_FromAfterTo_Returns400()
+    {
+        var response = await NewClient().GetAsync("/api/events?from=2030-05-10&to=2030-05-01");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetEvent_ThatDoesNotExist_Returns404()
     {
         var response = await NewClient().GetAsync("/api/events/999999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private static async Task<EventDto> CreateNamedEventAsync(HttpClient organiser, string name, string eventType)
+    {
+        var response = await organiser.PostAsJsonAsync("/api/events", EventBody(name, 20, eventType));
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return await ReadAsync<EventDto>(response);
     }
 }
