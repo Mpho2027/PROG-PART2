@@ -3,41 +3,142 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - RaceDay.Web</title>
+    <title>@ViewData["Title"] | RaceDay</title>
+    <link rel="icon" type="image/svg+xml" href="~/img/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/RaceDay.Web.styles.css" asp-append-version="true" />
 </head>
+@{
+    var user = UserSession.User;
+    var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string Active(string a, string c) => area == a && controller == c ? "active" : "";
+}
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">RaceDay.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-lg navbar-dark rd-navbar">
+            <div class="container">
+                <a class="navbar-brand rd-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="rd-brand__mark" aria-hidden="true">RD</span>
+                    <span class="rd-brand__text">Race<span>Day</span></span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                        aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
+
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-lg-1">
+                        @if (user?.IsOrganiser == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @Active("Organiser", "Dashboard")" asp-area="Organiser" asp-controller="Dashboard" asp-action="Index">
+                                    <span class="material-symbols-rounded" aria-hidden="true">dashboard</span>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active("Organiser", "Events")" asp-area="Organiser" asp-controller="Events" asp-action="Index">
+                                    <span class="material-symbols-rounded" aria-hidden="true">event</span>My events
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @Active("", "Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                                    <span class="material-symbols-rounded" aria-hidden="true">travel_explore</span>Browse events
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @Active("", "Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                                    <span class="material-symbols-rounded" aria-hidden="true">travel_explore</span>Events
+                                </a>
+                            </li>
+                            @if (user?.IsParticipant == true)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @Active("Participant", "Enrolments")" asp-area="Participant" asp-controller="Enrolments" asp-action="Index">
+                                        <span class="material-symbols-rounded" aria-hidden="true">confirmation_number</span>My enrolments
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @Active("Participant", "Results")" asp-area="Participant" asp-controller="Results" asp-action="Index">
+                                        <span class="material-symbols-rounded" aria-hidden="true">military_tech</span>My results
+                                    </a>
+                                </li>
+                            }
+                        }
                     </ul>
+
+                    @if (user is null)
+                    {
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-outline-light" asp-area="" asp-controller="Account" asp-action="Login">Log in</a>
+                            <a class="btn btn-primary" asp-area="" asp-controller="Account" asp-action="Register">Create account</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="dropdown">
+                            <button class="btn d-flex align-items-center gap-2 text-white border-0 px-0" type="button" id="userMenu"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                @if (user.HasProfilePicture)
+                                {
+                                    <img class="avatar" src="@Url.Action("Photo", "Account", new { area = "" })" alt="" />
+                                }
+                                else
+                                {
+                                    <span class="avatar" aria-hidden="true">@user.FullName.Substring(0, 1).ToUpperInvariant()</span>
+                                }
+                                <span class="text-start lh-sm">
+                                    <span class="d-block fw-semibold">@user.FirstName</span>
+                                    <span class="role-pill">@user.Role</span>
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Profile">
+                                        <span class="material-symbols-rounded" aria-hidden="true">person</span>My profile
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                                        <button type="submit" class="dropdown-item">
+                                            <span class="material-symbols-rounded" aria-hidden="true">logout</span>Log out
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - RaceDay.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <main>
+        @if (IsSectionDefined("Hero"))
+        {
+            @RenderSection("Hero")
+        }
+        <div class="container @(IsSectionDefined("Hero") ? "" : "page")">
+            <partial name="_Alerts" />
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="rd-footer">
+        <div class="container d-flex flex-wrap justify-content-between gap-2">
+            <span><strong>RaceDay</strong> &middot; Running, walking and cycling events across South Africa</span>
+            <span>&copy; @DateTime.Now.Year RaceDay</span>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

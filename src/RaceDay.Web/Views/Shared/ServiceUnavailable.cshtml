@@ -1,0 +1,12 @@
+@{
+    ViewData["Title"] = "Service unavailable";
+}
+
+<div class="message-page">
+    <span class="material-symbols-rounded message-page__icon" aria-hidden="true">cloud_off</span>
+    <h1 class="race-heading">We can't reach RaceDay right now</h1>
+    <p class="text-muted">The RaceDay service is not responding. Please try again in a moment.</p>
+    <a href="@Context.Request.Path@Context.Request.QueryString" class="btn btn-primary btn-icon">
+        <span class="material-symbols-rounded" aria-hidden="true">refresh</span>Try again
+    </a>
+</div>

@@ -1,0 +1,5 @@
+@using RaceDay.Web.Infrastructure
+@model string
+<span class="status-badge status-badge--@Model">
+    <span class="material-symbols-rounded" aria-hidden="true">@Display.StatusIcon(Model)</span>@Model
+</span>

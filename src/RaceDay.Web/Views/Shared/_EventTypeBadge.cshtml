@@ -1,0 +1,5 @@
+@using RaceDay.Web.Infrastructure
+@model EventType
+<span class="type-badge type-badge--@Model">
+    <span class="material-symbols-rounded" aria-hidden="true">@Display.TypeIcon(Model)</span>@Display.TypeLabel(Model)
+</span>

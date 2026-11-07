@@ -18,6 +18,14 @@ public class HomeController : Controller
         return View();
     }
 
+    /// <summary>Friendly page for error status codes such as 404 (see UseStatusCodePagesWithReExecute).</summary>
+    [HttpGet, ActionName("StatusCode")]
+    public IActionResult StatusCodePage(int code)
+    {
+        Response.StatusCode = code is >= 400 and <= 599 ? code : StatusCodes.Status404NotFound;
+        return View("StatusCode", code);
+    }
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
