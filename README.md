@@ -27,7 +27,7 @@ RaceDay.sln
 ├── src/RaceDay.Api/                 ASP.NET Core Web API
 │   ├── Auth/                        Session authentication handler, role constants
 │   ├── Controllers/                 Auth, Users, Events, Categories, Enrolments, Results
-│   ├── Data/                        DbContext, EF Core migrations, demo data seeder
+│   ├── Data/                        DbContext, EF Core migrations, database initialiser
 │   ├── Dtos/                        Request/response models (with validation)
 │   ├── Models/                      Entities: Role, User, Event, Category, EventEnrolment, Result
 │   └── Swagger/                     Adds "Role required" + 401/403 info to every endpoint
@@ -55,7 +55,7 @@ RaceDay.sln
    To use a full SQL Server instance, change `ConnectionStrings:RaceDayDB`, e.g. `Server=localhost;Database=RaceDayDB;Trusted_Connection=True;TrustServerCertificate=True`.
 3. Set **RaceDay.Api** as the startup project and press **F5**. The browser opens on Swagger.
 
-On first start the API **applies the EF Core migration automatically** (creates `RaceDayDB` and all tables) and **seeds demo data**. There is no need to run `Update-Database` manually, although it works too (`Update-Database` in the Package Manager Console, or `dotnet ef database update --project src/RaceDay.Api`).
+On first start the API **applies the EF Core migration automatically** (creates `RaceDayDB` and all tables). No sample accounts or events are created. There is no need to run `Update-Database` manually, although it works too (`Update-Database` in the Package Manager Console, or `dotnet ef database update --project src/RaceDay.Api`).
 
 **Using the SQL script instead:** `docs/RaceDay_Database_Schema.sql` builds the same schema in SSMS and records the migration as applied, so the API runs against a script-created database without changes. The script and the migration produce identical tables, keys, constraints and indexes.
 
@@ -76,19 +76,9 @@ dotnet run --project src/RaceDay.Api -- --Database:Provider=InMemory
 
 Swagger UI lists every endpoint with its purpose, **the role it requires**, the request body it expects (with example values) and every response it can return.
 
-1. Expand **POST /api/auth/login** → *Try it out* → log in with a demo account (below).
-2. The browser now holds the session cookie, so **every later request from the Swagger page is authenticated** as that user. No token needs to be copied.
+1. Register an account with **POST /api/auth/register** (role `Organiser` or `Participant`). There are no built-in accounts.
+2. Log in with **POST /api/auth/login**. The browser now holds the session cookie, so every later request from the Swagger page is authenticated as that user.
 3. To switch users, call **POST /api/auth/logout** and log in again.
-
-| Role | Email | Password |
-|---|---|---|
-| Organiser | `thabo.mokoena@raceday.co.za` | `Password123!` |
-| Organiser | `lindiwe.dube@raceday.co.za` | `Password123!` |
-| Participant | `sarah.botha@example.com` | `Password123!` |
-| Participant | `michael.vanwyk@example.com` | `Password123!` |
-| Admin | `admin@raceday.co.za` | `Admin123!` |
-
-The demo data contains two upcoming events and one completed event with results. Thabo owns events 1 and 2; Lindiwe owns event 3.
 
 ## Authentication and role-based access
 
@@ -180,7 +170,7 @@ The **Admin** role from the plan is kept for `GET /api/users/{id}` and `DELETE /
 | 2 | `Categories.DistanceKm` now `NULL`able; new `Categories.MinAge`, `Categories.MaxAge` (`INT NULL`) | Age categories have no distance |
 | 3 | `ON DELETE CASCADE` on Events → Categories → EventEnrolments → Results | The plan says deleting an event deletes its categories; enrolments and results of a deleted category cannot exist on their own. User foreign keys stay `NO ACTION`, so there are no multiple cascade paths |
 | 4 | Unique rules (`UQ_Users_Email`, `UQ_Roles_RoleName`, `UQ_Enrolment_Participant_Category`, `UQ_Results_Enrolment`) are now unique **indexes** with the same names, plus EF's standard indexes on foreign keys | This is how EF Core code-first creates them; enforcement is identical |
-| 5 | Seed data: real password hashes (so demo accounts can log in), an Admin user, events of each type, age categories, `__EFMigrationsHistory` row | Makes the script-created database usable by the API |
+| 5 | Sample rows removed (only the three roles are inserted), plus an `__EFMigrationsHistory` row | Users register their own accounts, and the script-created database is usable by the API |
 | 6 | ERD redrawn: new columns highlighted; relationship ends corrected (the Part 1 diagram drew the crow's foot at the "one" end of several relationships); optionality shown (e.g. an enrolment has 0..1 results) | Accuracy |
 
 ---

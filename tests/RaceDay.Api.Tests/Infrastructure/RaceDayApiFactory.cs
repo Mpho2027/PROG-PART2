@@ -22,7 +22,6 @@ public class RaceDayApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("Database:Provider", "InMemory");
         builder.UseSetting("Database:InMemoryName", _databaseName);
-        builder.UseSetting("Seed:DemoData", "false");
         builder.UseSetting("Seed:AdminEmail", AdminEmail);
         builder.UseSetting("Seed:AdminPassword", AdminPassword);
 

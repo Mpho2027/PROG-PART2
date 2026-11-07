@@ -27,7 +27,6 @@ public class UserProfileDto
 /// <summary>Profile fields a user may change on their own account.</summary>
 public class UpdateProfileRequest
 {
-    /// <example>Sarah Botha-Smith</example>
     [Required, StringLength(100, MinimumLength = 2)]
     public string FullName { get; set; } = string.Empty;
 

@@ -151,44 +151,4 @@ INSERT INTO dbo.Roles (RoleID, RoleName) VALUES (1, 'Organiser'), (2, 'Participa
 SET IDENTITY_INSERT dbo.Roles OFF;
 GO
 
--- Users: 2 Organisers, 2 Participants, 1 Admin.
--- [v2] Real ASP.NET Core Identity (PBKDF2-HMACSHA512) hashes, so these accounts can log in:
---      UserID 1-4 password: Password123!     Admin (UserID 5) password: Admin123!
-INSERT INTO dbo.Users (RoleID, FullName, Email, PasswordHash, PhoneNumber) VALUES
-(1, 'Thabo Mokoena',   'thabo.mokoena@raceday.co.za', 'AQAAAAIAAYagAAAAECIo//4Kk4JAfXUP65gyAEP/l2jdo2soBWmeMJSKH2OUyoxAoR+OzRNswOhVderQTA==', '0821234567'),
-(1, 'Lindiwe Dube',    'lindiwe.dube@raceday.co.za',  'AQAAAAIAAYagAAAAECIo//4Kk4JAfXUP65gyAEP/l2jdo2soBWmeMJSKH2OUyoxAoR+OzRNswOhVderQTA==', '0827654321'),
-(2, 'Sarah Botha',     'sarah.botha@example.com',     'AQAAAAIAAYagAAAAECIo//4Kk4JAfXUP65gyAEP/l2jdo2soBWmeMJSKH2OUyoxAoR+OzRNswOhVderQTA==', '0731112222'),
-(2, 'Michael van Wyk', 'michael.vanwyk@example.com',  'AQAAAAIAAYagAAAAECIo//4Kk4JAfXUP65gyAEP/l2jdo2soBWmeMJSKH2OUyoxAoR+OzRNswOhVderQTA==', '0733334444'),
-(3, 'RaceDay Admin',   'admin@raceday.co.za',         'AQAAAAIAAYagAAAAEGdPLji8e1eUEYhPO/OXb82MfPqgM4RmbSELDxovKRRJSXwLQrACzplQLgZQCY0sxA==', NULL);
-GO
-
--- Events: one of each type, owned by the two organisers (UserID 1 and 2)
-INSERT INTO dbo.Events (OrganiserID, EventName, EventDate, Location, Description, DistanceKm, EventType) VALUES
-(1, 'Pretoria Spring Marathon', '2026-11-15', 'Pretoria, Gauteng',       'Annual road race through the Union Buildings precinct.', 42.20, 'Run'),
-(1, 'Centurion Night Walk',     '2026-12-05', 'Centurion, Gauteng',      'Evening fun walk with a glow-in-the-dark theme.',          5.00, 'Walk'),
-(2, 'Cape Cycle Challenge',     '2026-09-26', 'Cape Town, Western Cape', 'Road cycle tour around the Cape Peninsula.',               60.00, 'Cycle');
-GO
-
--- Categories: distance categories and age categories
-INSERT INTO dbo.Categories (EventID, CategoryName, DistanceKm, MinAge, MaxAge, MaxParticipants, EntryFee) VALUES
-(1, '10km Fun Run',  10.00, NULL, NULL, 500, 150.00),
-(1, '42km Marathon', 42.20, NULL, NULL, 300, 350.00),
-(2, 'Under 20',       NULL, NULL,   19, 200,  50.00),
-(2, 'Senior',         NULL,   20, NULL, 400, 100.00),
-(3, '30km Sprint',   30.00, NULL, NULL, 200, 250.00),
-(3, '60km Tour',     60.00, NULL, NULL, 150, 400.00);
-GO
-
--- EventEnrolments: the two participants (UserID 3 and 4)
-INSERT INTO dbo.EventEnrolments (ParticipantID, CategoryID, BibNumber, Status) VALUES
-(3, 1, 'RD00001', 'Confirmed'),
-(3, 5, 'RD00002', 'Confirmed'),
-(4, 4, 'RD00003', 'Confirmed'),
-(4, 5, 'RD00004', 'Confirmed');
-GO
-
--- Results: the completed Cape Cycle Challenge (30km Sprint)
-INSERT INTO dbo.Results (EnrolmentID, FinishTime, Position, Status) VALUES
-(2, '00:58:41', 2, 'Final'),
-(4, '00:55:03', 1, 'Final');
-GO
+-- Users are added when they register in the application.

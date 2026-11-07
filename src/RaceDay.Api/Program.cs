@@ -59,8 +59,7 @@ builder.Services.AddSwaggerGen(options =>
             "**How to test protected endpoints:** call `POST /api/auth/login` first. The server starts a session and " +
             "your browser stores the session cookie, so every request made from this page afterwards is authenticated " +
             "as that user. Call `POST /api/auth/logout` to end the session or switch users.\n\n" +
-            "Demo accounts (password `Password123!`): Organiser `thabo.mokoena@raceday.co.za`, " +
-            "Participant `sarah.botha@example.com`."
+            "There are no built-in accounts: register an Organiser or a Participant with `POST /api/auth/register` first."
     });
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
