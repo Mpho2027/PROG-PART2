@@ -1,0 +1,35 @@
+@using RaceDay.Web.Infrastructure
+@model EventDto
+<article class="event-card">
+    <a asp-area="" asp-controller="Events" asp-action="Details" asp-route-id="@Model.EventId" class="text-decoration-none" tabindex="-1" aria-hidden="true">
+        <div class="event-banner event-banner--@Model.EventType @(Model.HasBanner ? "" : "event-banner--placeholder")">
+            <span class="date-chip">
+                <strong>@Model.EventDate.Day</strong>
+                <small>@Display.Month(Model.EventDate)</small>
+            </span>
+            @if (Model.HasBanner)
+            {
+                <img src="@Url.Action("Banner", "Events", new { area = "", id = Model.EventId })" alt="" loading="lazy" />
+            }
+            else
+            {
+                <span class="material-symbols-rounded">@Display.TypeIcon(Model.EventType)</span>
+            }
+        </div>
+    </a>
+    <div class="event-card__body">
+        <div><partial name="_EventTypeBadge" model="Model.EventType" /></div>
+        <h2 class="event-card__title">
+            <a asp-area="" asp-controller="Events" asp-action="Details" asp-route-id="@Model.EventId">@Model.EventName</a>
+        </h2>
+        <div class="event-card__meta">
+            <span><span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>@Display.Date(Model.EventDate)</span>
+            <span><span class="material-symbols-rounded" aria-hidden="true">location_on</span>@Model.Location</span>
+            <span><span class="material-symbols-rounded" aria-hidden="true">route</span>@Display.Km(Model.DistanceKm)</span>
+        </div>
+        <div class="event-card__footer">
+            <small class="text-muted fw-semibold">@Display.DaysAway(Model.EventDate)</small>
+            <a asp-area="" asp-controller="Events" asp-action="Details" asp-route-id="@Model.EventId" class="btn btn-sm btn-outline-primary">View event</a>
+        </div>
+    </div>
+</article>

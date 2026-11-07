@@ -16,7 +16,7 @@
     var user = UserSession.User;
     var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
-    string Active(string a, string c) => area == a && controller == c ? "active" : "";
+    string Active(string a, params string[] controllers) => area == a && controllers.Contains(controller) ? "active" : "";
 }
 <body>
     <header>
@@ -46,7 +46,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @Active("", "Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                                <a class="nav-link @Active("", "Home", "Events")" asp-area="" asp-controller="Home" asp-action="Index">
                                     <span class="material-symbols-rounded" aria-hidden="true">travel_explore</span>Browse events
                                 </a>
                             </li>
@@ -54,7 +54,7 @@
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link @Active("", "Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                                <a class="nav-link @Active("", "Home", "Events")" asp-area="" asp-controller="Home" asp-action="Index">
                                     <span class="material-symbols-rounded" aria-hidden="true">travel_explore</span>Events
                                 </a>
                             </li>

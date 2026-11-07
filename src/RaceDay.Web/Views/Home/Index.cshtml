@@ -1,8 +1,90 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model EventsIndexViewModel
+@{
+    ViewData["Title"] = "Upcoming events";
+    var filter = Model.Filter;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@section Hero {
+    <section class="rd-hero">
+        <div class="container">
+            <h1>Find your next <span>race day</span></h1>
+            <p>Fun runs, road races, heritage walks and cycle tours across South Africa. Pick an event, choose your category and you're on the start list.</p>
+        </div>
+    </section>
+}
+
+<div class="filter-bar">
+    <form method="get" asp-action="Index" class="panel" role="search">
+        <div class="row g-2 align-items-end">
+            <div class="col-lg-4">
+                <label asp-for="Filter.Search" class="form-label">Search</label>
+                <input name="Search" value="@filter.Search" class="form-control" placeholder="Event name or place" maxlength="100" />
+            </div>
+            <div class="col-sm-6 col-lg-2">
+                <label for="EventType" class="form-label">Event type</label>
+                <select name="EventType" id="EventType" class="form-select">
+                    <option value="">All types</option>
+                    @foreach (var type in Enum.GetValues<EventType>())
+                    {
+                        <option value="@type" selected="@(filter.EventType == type)">@RaceDay.Web.Infrastructure.Display.TypeLabel(type)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-sm-3 col-lg-2">
+                <label for="From" class="form-label">From</label>
+                <input type="date" name="From" id="From" value="@filter.From?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-6 col-sm-3 col-lg-2">
+                <label for="To" class="form-label">To</label>
+                <input type="date" name="To" id="To" value="@filter.To?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-lg-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-icon flex-grow-1 justify-content-center">
+                    <span class="material-symbols-rounded" aria-hidden="true">search</span>Filter
+                </button>
+                @if (filter.HasFilters)
+                {
+                    <a asp-action="Index" class="btn btn-light" title="Clear filters" aria-label="Clear filters">
+                        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="page pt-4">
+    @if (Model.ErrorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <span class="material-symbols-rounded" aria-hidden="true">error</span><span>@Model.ErrorMessage</span>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h3 mb-0">@(filter.HasFilters ? "Matching events" : "Upcoming events")</h2>
+        <span class="text-muted fw-semibold">@Model.Events.Count event@(Model.Events.Count == 1 ? "" : "s")</span>
+    </div>
+
+    @if (Model.Events.Count == 0)
+    {
+        <div class="panel empty-state">
+            <span class="material-symbols-rounded" aria-hidden="true">event_busy</span>
+            <h2>No events found</h2>
+            <p class="mb-3">@(filter.HasFilters ? "Try a different search or clear the filters." : "There are no upcoming events yet. Check back soon.")</p>
+            @if (filter.HasFilters)
+            {
+                <a asp-action="Index" class="btn btn-outline-primary">Clear filters</a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+            @foreach (var ev in Model.Events)
+            {
+                <div class="col"><partial name="_EventCard" model="ev" /></div>
+            }
+        </div>
+    }
 </div>

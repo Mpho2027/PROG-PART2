@@ -1,0 +1,196 @@
+@using RaceDay.Web.Infrastructure
+@model EventDetailsViewModel
+@{
+    var ev = Model.Event;
+    ViewData["Title"] = ev.EventName;
+    var user = UserSession.User;
+}
+
+<a asp-controller="Home" asp-action="Index" class="breadcrumb-link">
+    <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>All events
+</a>
+
+<div class="event-banner event-banner--hero event-banner--@ev.EventType @(ev.HasBanner ? "" : "event-banner--placeholder") mb-4">
+    <span class="date-chip">
+        <strong>@ev.EventDate.Day</strong>
+        <small>@Display.Month(ev.EventDate) @ev.EventDate.Year</small>
+    </span>
+    @if (ev.HasBanner)
+    {
+        <img src="@Url.Action("Banner", "Events", new { id = ev.EventId })" alt="Banner for @ev.EventName" />
+    }
+    else
+    {
+        <span class="material-symbols-rounded">@Display.TypeIcon(ev.EventType)</span>
+    }
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="d-flex flex-wrap gap-2 mb-2">
+            <partial name="_EventTypeBadge" model="ev.EventType" />
+            <span class="status-badge status-badge--@(ev.IsPast ? "Past" : "Upcoming")">
+                <span class="material-symbols-rounded" aria-hidden="true">@(ev.IsPast ? "history" : "event_upcoming")</span>@(ev.IsPast ? "Completed" : Display.DaysAway(ev.EventDate))
+            </span>
+        </div>
+        <h1 class="display-6 race-heading mb-3">@ev.EventName</h1>
+        @if (!string.IsNullOrWhiteSpace(ev.Description))
+        {
+            <p class="lead" style="white-space: pre-line">@ev.Description</p>
+        }
+
+        <section class="panel mt-4">
+            <h2 class="panel__title"><span class="material-symbols-rounded" aria-hidden="true">format_list_bulleted</span>Categories</h2>
+            @if (Model.Categories.Count == 0)
+            {
+                <p class="text-muted mb-0">The organiser has not added categories for this event yet.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table rd-table">
+                        <thead>
+                            <tr><th>Category</th><th>Distance / age</th><th>Entry fee</th><th>Places</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.Categories)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@c.CategoryName</td>
+                                    <td>
+                                        @(c.DistanceKm.HasValue ? Display.Km(c.DistanceKm.Value) : "")
+                                        @if (c.DistanceKm.HasValue && (c.MinAge.HasValue || c.MaxAge.HasValue)) { <text> &middot; </text> }
+                                        @Display.AgeRange(c.MinAge, c.MaxAge)
+                                    </td>
+                                    <td>@Display.Rand(c.EntryFee)</td>
+                                    <td class="capacity">
+                                        <div class="progress mb-1"><div class="progress-bar" style="width: @(c.MaxParticipants == 0 ? 0 : Math.Min(100, c.EnrolledCount * 100 / c.MaxParticipants))%"></div></div>
+                                        <small>@(c.SpotsRemaining == 0 ? "Full" : $"{c.SpotsRemaining} of {c.MaxParticipants} left")</small>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        @if (ev.IsPast)
+        {
+            <section class="panel">
+                <h2 class="panel__title"><span class="material-symbols-rounded" aria-hidden="true">emoji_events</span>Results</h2>
+                @if (Model.Results.Count == 0)
+                {
+                    <p class="text-muted mb-0">Results have not been published yet.</p>
+                }
+                @foreach (var c in Model.Categories.Where(c => Model.Results.ContainsKey(c.CategoryId)))
+                {
+                    <h3 class="h5 mt-3">@c.CategoryName</h3>
+                    <div class="table-responsive">
+                        <table class="table rd-table">
+                            <thead><tr><th>Position</th><th>Bib</th><th>Participant</th><th>Time</th></tr></thead>
+                            <tbody>
+                                @foreach (var r in Model.Results[c.CategoryId])
+                                {
+                                    <tr>
+                                        <td class="fw-bold">@(r.Position.HasValue ? Display.Ordinal(r.Position.Value) : "-")</td>
+                                        <td><span class="bib">@r.BibNumber</span></td>
+                                        <td>@r.ParticipantName</td>
+                                        <td class="font-monospace">@r.FinishTime</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <aside class="panel mb-4">
+            <dl class="info-list">
+                <div><span class="material-symbols-rounded" aria-hidden="true">calendar_month</span><span><dt>Date</dt><dd>@Display.Date(ev.EventDate)</dd></span></div>
+                <div><span class="material-symbols-rounded" aria-hidden="true">location_on</span><span><dt>Location</dt><dd>@ev.Location</dd></span></div>
+                <div><span class="material-symbols-rounded" aria-hidden="true">route</span><span><dt>Distance</dt><dd>@Display.Km(ev.DistanceKm)</dd></span></div>
+                <div><span class="material-symbols-rounded" aria-hidden="true">badge</span><span><dt>Organiser</dt><dd>@ev.OrganiserName</dd></span></div>
+                <div><span class="material-symbols-rounded" aria-hidden="true">groups</span><span><dt>Entries</dt><dd>@Model.TotalEntries</dd></span></div>
+            </dl>
+        </aside>
+
+        <aside class="panel" id="enter">
+            <h2 class="panel__title"><span class="material-symbols-rounded" aria-hidden="true">how_to_reg</span>Enter this event</h2>
+
+            @if (Model.IsOwner)
+            {
+                <p class="text-muted">You organise this event.</p>
+                <div class="d-grid gap-2">
+                    <a asp-area="Organiser" asp-controller="Events" asp-action="Edit" asp-route-id="@ev.EventId" class="btn btn-dark btn-icon justify-content-center"><span class="material-symbols-rounded" aria-hidden="true">edit</span>Edit event</a>
+                    <a asp-area="Organiser" asp-controller="Categories" asp-action="Index" asp-route-eventId="@ev.EventId" class="btn btn-outline-primary">Manage categories</a>
+                    <a asp-area="Organiser" asp-controller="Enrolments" asp-action="Index" asp-route-eventId="@ev.EventId" class="btn btn-outline-primary">View enrolments</a>
+                    <a asp-area="Organiser" asp-controller="Results" asp-action="Index" asp-route-eventId="@ev.EventId" class="btn btn-outline-primary">Capture results</a>
+                </div>
+            }
+            else if (user?.IsOrganiser == true)
+            {
+                <p class="text-muted mb-0">Organiser accounts manage events. Log in with a participant account to enter.</p>
+            }
+            else if (ev.IsPast)
+            {
+                <p class="text-muted mb-0">Entries are closed: this event has already taken place.</p>
+            }
+            else if (Model.Categories.Count == 0)
+            {
+                <p class="text-muted mb-0">Entries open once the organiser adds categories.</p>
+            }
+            else if (user is null)
+            {
+                <p class="text-muted">Log in or create a participant account to choose a category and enter.</p>
+                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", "Events", new { id = ev.EventId })" class="btn btn-primary w-100">Log in to enter</a>
+            }
+            else
+            {
+                <form asp-area="Participant" asp-controller="Enrolments" asp-action="Enrol" method="post">
+                    <input type="hidden" name="eventId" value="@ev.EventId" />
+                    <p class="text-muted small mb-2">Choose your category:</p>
+                    @foreach (var c in Model.Categories)
+                    {
+                        var entered = Model.MyEnrolments.TryGetValue(c.CategoryId, out var mine);
+                        var full = c.SpotsRemaining == 0;
+                        <label class="category-option @(full || entered ? "category-option--full" : "")">
+                            <input type="radio" name="categoryId" value="@c.CategoryId" disabled="@(full || entered)" required />
+                            <span class="category-option__body">
+                                <span>
+                                    <span class="category-option__name d-block">@c.CategoryName</span>
+                                    <span class="category-option__meta">
+                                        @if (entered)
+                                        {
+                                            <text>Entered &middot; </text><span class="bib">@mine!.BibNumber</span>
+                                        }
+                                        else
+                                        {
+                                            @(full ? "Full" : $"{c.SpotsRemaining} places left")
+                                        }
+                                    </span>
+                                </span>
+                                <span class="category-option__fee">@Display.Rand(c.EntryFee)</span>
+                            </span>
+                        </label>
+                    }
+                    @if (Model.Categories.Any(c => c.SpotsRemaining > 0 && !Model.MyEnrolments.ContainsKey(c.CategoryId)))
+                    {
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-2">Enter now</button>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-0">There are no more categories you can enter.</p>
+                    }
+                </form>
+                @if (Model.MyEnrolments.Count > 0)
+                {
+                    <a asp-area="Participant" asp-controller="Enrolments" asp-action="Index" class="d-inline-block mt-3">View my enrolments</a>
+                }
+            }
+        </aside>
+    </div>
+</div>
