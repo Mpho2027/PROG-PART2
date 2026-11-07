@@ -73,6 +73,41 @@ public class EventsController : RaceDayControllerBase
         return Ok(events.Select(EventDto.From));
     }
 
+    /// <summary>Lists the logged-in Organiser's own events with enrolment totals (dashboard summary).</summary>
+    /// <remarks>Upcoming events come first (soonest first), followed by past events (most recent first).</remarks>
+    /// <response code="200">Array of the Organiser's events with category, enrolment and result counts.</response>
+    /// <response code="403">Only Organisers have events to manage.</response>
+    [HttpGet("~/api/users/me/events")]
+    [Authorize(Roles = AppRoles.Organiser)]
+    [ProducesResponseType(typeof(IEnumerable<OrganiserEventSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMine()
+    {
+        var organiserId = CurrentUserId;
+        var today = Today;
+        var events = await _db.Events
+            .AsNoTracking()
+            .Where(e => e.OrganiserId == organiserId)
+            .Select(e => new OrganiserEventSummaryDto
+            {
+                EventId = e.EventId,
+                EventName = e.EventName,
+                EventDate = e.EventDate,
+                Location = e.Location,
+                EventType = e.EventType,
+                DistanceKm = e.DistanceKm,
+                CategoryCount = e.Categories.Count,
+                EnrolmentCount = e.Categories.SelectMany(c => c.Enrolments).Count(),
+                Capacity = e.Categories.Sum(c => c.MaxParticipants),
+                ResultsCaptured = e.Categories.SelectMany(c => c.Enrolments).Count(en => en.Result != null),
+                IsUpcoming = e.EventDate >= today
+            })
+            .ToListAsync();
+
+        var ordered = events.Where(e => e.IsUpcoming).OrderBy(e => e.EventDate)
+            .Concat(events.Where(e => !e.IsUpcoming).OrderByDescending(e => e.EventDate));
+        return Ok(ordered);
+    }
+
     /// <summary>Retrieves the details of a single event.</summary>
     /// <response code="200">The event.</response>
     /// <response code="404">No event with this ID.</response>

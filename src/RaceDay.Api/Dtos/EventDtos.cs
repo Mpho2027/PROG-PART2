@@ -82,3 +82,27 @@ public class EventDto
         CreatedAt = e.CreatedAt
     };
 }
+
+/// <summary>One row of the Organiser dashboard: an event with its enrolment totals.</summary>
+public class OrganiserEventSummaryDto
+{
+    public int EventId { get; set; }
+    public string EventName { get; set; } = string.Empty;
+    public DateTime EventDate { get; set; }
+    public string Location { get; set; } = string.Empty;
+    public EventType EventType { get; set; }
+    public decimal DistanceKm { get; set; }
+    public int CategoryCount { get; set; }
+
+    /// <summary>Participants enrolled across all categories of the event.</summary>
+    public int EnrolmentCount { get; set; }
+
+    /// <summary>Total places across all categories.</summary>
+    public int Capacity { get; set; }
+
+    /// <summary>How many enrolments already have a captured result.</summary>
+    public int ResultsCaptured { get; set; }
+
+    /// <summary>True when the event date is today or later.</summary>
+    public bool IsUpcoming { get; set; }
+}
