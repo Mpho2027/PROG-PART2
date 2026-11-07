@@ -1,0 +1,19 @@
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<div class="message-page">
+    <span class="material-symbols-rounded message-page__icon" aria-hidden="true">block</span>
+    <h1 class="race-heading">This page is not for your account</h1>
+    <p class="text-muted">
+        @if (UserSession.User is { } user)
+        {
+            <text>You are logged in as a @user.Role.ToLowerInvariant(), and this page belongs to a different role.</text>
+        }
+        else
+        {
+            <text>Please log in to continue.</text>
+        }
+    </p>
+    <a asp-controller="Home" asp-action="Index" asp-area="" class="btn btn-primary">Back to events</a>
+</div>
