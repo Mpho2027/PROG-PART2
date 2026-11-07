@@ -1,0 +1,19 @@
+# Keep the Docker build context small: only the source projects are needed.
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/TestResults/
+**/*.trx
+.git/
+.github/
+.config/
+docs/
+tests/
+tools/
+README.md
+docker-compose*.yml
+**/Dockerfile*
+.dockerignore
