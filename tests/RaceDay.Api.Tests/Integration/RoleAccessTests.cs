@@ -25,7 +25,8 @@ public class RoleAccessTests : ApiTestBase
         { "GET", "/api/events/1/enrolments" },
         { "POST", "/api/enrolments/1/result" },
         { "GET", "/api/users/me/events" },
-        { "PUT", "/api/enrolments/1/status" }
+        { "PUT", "/api/enrolments/1/status" },
+        { "PUT", "/api/events/1/banner" }
     };
 
     /// <summary>Participant-only endpoints.</summary>
@@ -46,6 +47,8 @@ public class RoleAccessTests : ApiTestBase
                 { "GET", "/api/users/me" },
                 { "PUT", "/api/users/me" },
                 { "GET", "/api/users/1" },
+                { "PUT", "/api/users/me/photo" },
+                { "GET", "/api/users/me/photo" },
                 { "DELETE", "/api/enrolments/1" }
             };
             foreach (var row in OrganiserEndpoints) data.Add((string)row[0], (string)row[1]);

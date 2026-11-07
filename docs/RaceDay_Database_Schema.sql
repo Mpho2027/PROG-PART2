@@ -1,9 +1,9 @@
 /* ============================================================
    RaceDay database schema - Microsoft SQL Server (SSMS)
    ------------------------------------------------------------
-   Version 2 (Part 2). This script produces exactly the same schema as the
-   API's EF Core code-first migration (20261012123717_InitialCreate).
-   Changes from the Part 1 script are marked [v2] and explained in README.md.
+   Version 3 (Part 3). This script produces exactly the same schema as the
+   API's EF Core code-first migrations (InitialCreate and AddImageNames).
+   Changes from the Part 1 script are marked [v2] and [Part 3] and explained in README.md.
 
    Running the script DROPS and recreates all RaceDay tables.
    ============================================================ */
@@ -49,6 +49,7 @@ CREATE TABLE dbo.Users (
     PasswordHash    NVARCHAR(255) NOT NULL,      -- salted PBKDF2 hash, never the plain password
     PhoneNumber     NVARCHAR(20) NULL,
     CreatedAt       DATETIME NOT NULL DEFAULT (GETDATE()),
+    ProfileImageName NVARCHAR(200) NULL,         -- [Part 3] profile picture blob in Azure Blob Storage
     CONSTRAINT PK_Users PRIMARY KEY (UserID),
     CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleID) REFERENCES dbo.Roles (RoleID)
 );
@@ -69,6 +70,7 @@ CREATE TABLE dbo.Events (
     DistanceKm      DECIMAL(6,2) NOT NULL,       -- [v2] event distance
     EventType       NVARCHAR(10) NOT NULL,       -- [v2] Run / Walk / Cycle
     CreatedAt       DATETIME NOT NULL DEFAULT (GETDATE()),
+    BannerImageName NVARCHAR(200) NULL,          -- [Part 3] event banner blob in Azure Blob Storage
     CONSTRAINT PK_Events PRIMARY KEY (EventID),
     CONSTRAINT CK_Events_EventType CHECK (EventType IN ('Run', 'Walk', 'Cycle')),
     CONSTRAINT FK_Events_Users FOREIGN KEY (OrganiserID) REFERENCES dbo.Users (UserID)
@@ -138,7 +140,8 @@ CREATE TABLE dbo.__EFMigrationsHistory (
     CONSTRAINT PK___EFMigrationsHistory PRIMARY KEY (MigrationId)
 );
 INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
-VALUES (N'20261012123717_InitialCreate', N'8.0.11');
+VALUES (N'20261012123717_InitialCreate', N'8.0.11'),
+       (N'20261107202517_AddImageNames', N'8.0.11');
 GO
 
 /* ============================================================

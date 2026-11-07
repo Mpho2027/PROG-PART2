@@ -5,6 +5,7 @@ using RaceDay.Api.Auth;
 using RaceDay.Api.Data;
 using RaceDay.Api.Dtos;
 using RaceDay.Api.Models;
+using RaceDay.Api.Storage;
 
 namespace RaceDay.Api.Controllers;
 
@@ -13,8 +14,15 @@ namespace RaceDay.Api.Controllers;
 public class EventsController : RaceDayControllerBase
 {
     private readonly RaceDayDbContext _db;
+    private readonly IImageStorage _images;
+    private readonly ILogger<EventsController> _logger;
 
-    public EventsController(RaceDayDbContext db) => _db = db;
+    public EventsController(RaceDayDbContext db, IImageStorage images, ILogger<EventsController> logger)
+    {
+        _db = db;
+        _images = images;
+        _logger = logger;
+    }
 
     /// <summary>Creates a new event owned by the logged-in Organiser.</summary>
     /// <response code="201">Event created. Returns the new event.</response>
@@ -99,7 +107,8 @@ public class EventsController : RaceDayControllerBase
                 EnrolmentCount = e.Categories.SelectMany(c => c.Enrolments).Count(en => en.Status != EnrolmentStatus.Cancelled),
                 Capacity = e.Categories.Sum(c => c.MaxParticipants),
                 ResultsCaptured = e.Categories.SelectMany(c => c.Enrolments).Count(en => en.Result != null),
-                IsUpcoming = e.EventDate >= today
+                IsUpcoming = e.EventDate >= today,
+                HasBanner = e.BannerImageName != null
             })
             .ToListAsync();
 
@@ -160,9 +169,95 @@ public class EventsController : RaceDayControllerBase
         if (ev is null) return NotFoundMessage($"Event {id} was not found.");
         if (ev.OrganiserId != CurrentUserId) return NotOwner("You can only delete events you organise.");
 
+        var banner = ev.BannerImageName;
         _db.Events.Remove(ev);
         await _db.SaveChangesAsync();
+        if (banner is not null) await TryDeleteImageAsync(banner);
         return NoContent();
+    }
+
+    /// <summary>Uploads or replaces the event's banner image (stored in Azure Blob Storage).</summary>
+    /// <remarks>
+    /// Send the image as multipart/form-data in a field named "file". JPG, PNG, GIF and WEBP images up to 5 MB
+    /// are accepted; the type is checked from the file's contents. Only the event's Organiser may upload a banner.
+    /// A previous banner is deleted from storage.
+    /// </remarks>
+    /// <response code="200">Banner saved. Returns the event (hasBanner is true).</response>
+    /// <response code="400">No file, not a supported image, or larger than 5 MB.</response>
+    /// <response code="403">Not a logged-in Organiser, or not the owner of this event.</response>
+    /// <response code="404">No event with this ID.</response>
+    /// <response code="503">Azure Blob Storage is not reachable or not configured.</response>
+    [HttpPut("{id:int}/banner")]
+    [Authorize(Roles = AppRoles.Organiser)]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    [ProducesResponseType(typeof(EventDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> UploadBanner(int id, [FromForm] ImageUploadRequest request)
+    {
+        var ev = await _db.Events.Include(e => e.Organiser).SingleOrDefaultAsync(e => e.EventId == id);
+        if (ev is null) return NotFoundMessage($"Event {id} was not found.");
+        if (ev.OrganiserId != CurrentUserId) return NotOwner("You can only change the banner of events you organise.");
+        if (!ImageRules.TryValidate(request.File, out var contentType, out var extension, out var error))
+            return BadRequestMessage(error);
+
+        string blobName;
+        try
+        {
+            await using var stream = request.File!.OpenReadStream();
+            blobName = await _images.SaveAsync($"events/{id}", stream, contentType, extension);
+        }
+        catch (ImageStorageException ex)
+        {
+            return StorageUnavailable(ex);
+        }
+
+        var previous = ev.BannerImageName;
+        ev.BannerImageName = blobName;
+        await _db.SaveChangesAsync();
+        if (previous is not null) await TryDeleteImageAsync(previous);
+
+        return Ok(EventDto.From(ev));
+    }
+
+    /// <summary>Returns the event's banner image.</summary>
+    /// <remarks>The image is read from Azure Blob Storage and streamed through the API.</remarks>
+    /// <response code="200">The image file.</response>
+    /// <response code="404">No such event, or the event has no banner.</response>
+    /// <response code="503">Azure Blob Storage is not reachable or not configured.</response>
+    [HttpGet("{id:int}/banner")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetBanner(int id)
+    {
+        var blobName = await _db.Events.Where(e => e.EventId == id).Select(e => e.BannerImageName).SingleOrDefaultAsync();
+        if (blobName is null) return NotFoundMessage($"Event {id} has no banner image.");
+
+        try
+        {
+            var image = await _images.GetAsync(blobName);
+            return image is null ? NotFoundMessage($"Event {id} has no banner image.") : Image(image);
+        }
+        catch (ImageStorageException ex)
+        {
+            return StorageUnavailable(ex);
+        }
+    }
+
+    /// <summary>Removing an old image is best effort: the database change has already succeeded.</summary>
+    private async Task TryDeleteImageAsync(string blobName)
+    {
+        try
+        {
+            await _images.DeleteAsync(blobName);
+        }
+        catch (ImageStorageException ex)
+        {
+            _logger.LogWarning(ex, "Old image {BlobName} could not be deleted", blobName);
+        }
     }
 
     private static void Apply(Event ev, EventRequest request)

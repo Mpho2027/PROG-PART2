@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using RaceDay.Api.Data;
+using RaceDay.Api.Storage;
 
 namespace RaceDay.Api.Tests.Infrastructure;
 
@@ -17,6 +20,9 @@ public class RaceDayApiFactory : WebApplicationFactory<Program>
 
     private readonly string _databaseName = $"RaceDayTests-{Guid.NewGuid()}";
 
+    /// <summary>Stands in for Azure Blob Storage during tests.</summary>
+    public FakeImageStorage Images { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -24,6 +30,12 @@ public class RaceDayApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Database:InMemoryName", _databaseName);
         builder.UseSetting("Seed:AdminEmail", AdminEmail);
         builder.UseSetting("Seed:AdminPassword", AdminPassword);
+
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IImageStorage>();
+            services.AddSingleton<IImageStorage>(Images);
+        });
 
         // Keep test output readable: the hosted API's request/EF logging is not needed in test runs.
         builder.ConfigureLogging(logging => logging.ClearProviders());

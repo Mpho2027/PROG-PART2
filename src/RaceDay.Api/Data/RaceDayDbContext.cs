@@ -45,6 +45,7 @@ public class RaceDayDbContext : DbContext
             e.Property(u => u.Email).HasMaxLength(150).IsRequired();
             e.Property(u => u.PasswordHash).HasMaxLength(255).IsRequired();
             e.Property(u => u.PhoneNumber).HasMaxLength(20);
+            e.Property(u => u.ProfileImageName).HasMaxLength(200);
             e.Property(u => u.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
             e.HasIndex(u => u.Email).IsUnique().HasDatabaseName("UQ_Users_Email");
 
@@ -66,6 +67,7 @@ public class RaceDayDbContext : DbContext
             e.Property(ev => ev.Description).HasColumnType("nvarchar(max)");
             e.Property(ev => ev.DistanceKm).HasColumnType("decimal(6,2)");
             e.Property(ev => ev.EventType).HasConversion<string>().HasMaxLength(10);
+            e.Property(ev => ev.BannerImageName).HasMaxLength(200);
             e.Property(ev => ev.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
 
             e.HasOne(ev => ev.Organiser).WithMany(u => u.OrganisedEvents)

@@ -13,6 +13,9 @@ public class UserProfileDto
     public string Role { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 
+    /// <summary>True when a profile picture has been uploaded (GET /api/users/me/photo returns it).</summary>
+    public bool HasProfilePicture { get; set; }
+
     public static UserProfileDto From(User u) => new()
     {
         UserId = u.UserId,
@@ -20,7 +23,8 @@ public class UserProfileDto
         Email = u.Email,
         PhoneNumber = u.PhoneNumber,
         Role = u.Role.RoleName,
-        CreatedAt = u.CreatedAt
+        CreatedAt = u.CreatedAt,
+        HasProfilePicture = u.ProfileImageName is not null
     };
 }
 

@@ -43,5 +43,13 @@ public class LoginResponse
     public UserProfileDto User { get; set; } = null!;
 }
 
+/// <summary>An image file sent as multipart/form-data (field name "file").</summary>
+public class ImageUploadRequest
+{
+    /// <summary>JPG, PNG, GIF or WEBP image, at most 5 MB.</summary>
+    [Required]
+    public IFormFile? File { get; set; }
+}
+
 /// <summary>A simple message body, used for errors and confirmations.</summary>
 public record MessageResponse(string Message);

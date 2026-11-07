@@ -67,6 +67,9 @@ public class EventDto
     public string OrganiserName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 
+    /// <summary>True when a banner image has been uploaded (GET /api/events/{id}/banner returns it).</summary>
+    public bool HasBanner { get; set; }
+
     /// <summary>Requires Organiser to be loaded.</summary>
     public static EventDto From(Event e) => new()
     {
@@ -79,7 +82,8 @@ public class EventDto
         EventType = e.EventType,
         OrganiserId = e.OrganiserId,
         OrganiserName = e.Organiser.FullName,
-        CreatedAt = e.CreatedAt
+        CreatedAt = e.CreatedAt,
+        HasBanner = e.BannerImageName is not null
     };
 }
 
@@ -105,4 +109,6 @@ public class OrganiserEventSummaryDto
 
     /// <summary>True when the event date is today or later.</summary>
     public bool IsUpcoming { get; set; }
+
+    public bool HasBanner { get; set; }
 }

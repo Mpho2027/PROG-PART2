@@ -14,6 +14,9 @@ public class User
     public string? PhoneNumber { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>Name of the profile picture blob in Azure Blob Storage, or null when none was uploaded.</summary>
+    public string? ProfileImageName { get; set; }
+
     public Role Role { get; set; } = null!;
 
     /// <summary>Events this user organises (Organiser role only).</summary>

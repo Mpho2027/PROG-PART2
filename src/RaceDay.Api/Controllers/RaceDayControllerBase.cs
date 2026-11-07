@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RaceDay.Api.Auth;
 using RaceDay.Api.Dtos;
+using RaceDay.Api.Storage;
 
 namespace RaceDay.Api.Controllers;
 
@@ -23,6 +24,13 @@ public abstract class RaceDayControllerBase : ControllerBase
     protected ConflictObjectResult ConflictMessage(string message) => Conflict(new MessageResponse(message));
 
     protected BadRequestObjectResult BadRequestMessage(string message) => BadRequest(new MessageResponse(message));
+
+    /// <summary>503 when Azure Blob Storage cannot be reached or is not configured.</summary>
+    protected ObjectResult StorageUnavailable(ImageStorageException ex) =>
+        StatusCode(StatusCodes.Status503ServiceUnavailable, new MessageResponse(ex.Message));
+
+    /// <summary>Streams a stored image back to the client.</summary>
+    protected FileStreamResult Image(StoredImage image) => File(image.Content, image.ContentType);
 
     protected static DateTime Today => DateTime.Today;
 }
