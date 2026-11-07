@@ -16,7 +16,9 @@ namespace RaceDay.Api.Tests.Infrastructure;
 public class RaceDayApiFactory : WebApplicationFactory<Program>
 {
     public const string AdminEmail = "admin@raceday.test";
-    public const string AdminPassword = "AdminPass123!";
+
+    /// <summary>New random password for each test run.</summary>
+    public static readonly string AdminPassword = $"Admin-{Guid.NewGuid():N}";
 
     private readonly string _databaseName = $"RaceDayTests-{Guid.NewGuid()}";
 

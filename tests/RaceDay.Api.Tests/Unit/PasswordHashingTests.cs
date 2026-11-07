@@ -12,24 +12,24 @@ public class PasswordHashingTests
     [Fact]
     public void Hash_IsNotThePlainTextPassword()
     {
-        var hash = _hasher.HashPassword(_user, "Password123!");
+        var hash = _hasher.HashPassword(_user, "Racing2026!");
 
-        Assert.NotEqual("Password123!", hash);
-        Assert.DoesNotContain("Password123!", hash);
+        Assert.NotEqual("Racing2026!", hash);
+        Assert.DoesNotContain("Racing2026!", hash);
     }
 
     [Fact]
     public void Hash_IsSaltedSoTheSamePasswordHashesDifferently()
     {
-        Assert.NotEqual(_hasher.HashPassword(_user, "Password123!"), _hasher.HashPassword(_user, "Password123!"));
+        Assert.NotEqual(_hasher.HashPassword(_user, "Racing2026!"), _hasher.HashPassword(_user, "Racing2026!"));
     }
 
     [Fact]
     public void Verify_AcceptsTheCorrectPasswordAndRejectsAWrongOne()
     {
-        var hash = _hasher.HashPassword(_user, "Password123!");
+        var hash = _hasher.HashPassword(_user, "Racing2026!");
 
-        Assert.Equal(PasswordVerificationResult.Success, _hasher.VerifyHashedPassword(_user, hash, "Password123!"));
+        Assert.Equal(PasswordVerificationResult.Success, _hasher.VerifyHashedPassword(_user, hash, "Racing2026!"));
         Assert.Equal(PasswordVerificationResult.Failed, _hasher.VerifyHashedPassword(_user, hash, "password123!"));
     }
 }

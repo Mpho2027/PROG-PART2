@@ -14,7 +14,7 @@ namespace RaceDay.Api.Tests.Infrastructure;
 /// </summary>
 public abstract class ApiTestBase : IClassFixture<RaceDayApiFactory>
 {
-    protected const string Password = "Password123!";
+    protected const string Password = "Racing2026!";
 
     protected static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
