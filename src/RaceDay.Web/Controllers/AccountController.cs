@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RaceDay.Web.Filters;
 using RaceDay.Web.Infrastructure;
 using RaceDay.Web.Models.Api;
 using RaceDay.Web.Services;
@@ -102,10 +103,93 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [RequireRole]
+    public async Task<IActionResult> Profile()
+    {
+        var profile = await _api.GetProfileAsync();
+        if (!profile.Succeeded || profile.Data is null)
+        {
+            TempData["Error"] = profile.ErrorMessage;
+            return RedirectToAction("Index", "Home");
+        }
+        _session.Update(profile.Data);
+        return View(ProfileViewModel.From(profile.Data));
+    }
+
+    [HttpPost]
+    [RequireRole]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Profile(ProfileViewModel model)
+    {
+        if (!ModelState.IsValid) return View(await WithReadOnlyFieldsAsync(model));
+
+        var result = await _api.UpdateProfileAsync(model.FullName, model.PhoneNumber);
+        if (!result.Succeeded || result.Data is null)
+        {
+            ModelState.AddApiErrors(result);
+            return View(await WithReadOnlyFieldsAsync(model));
+        }
+
+        _session.Update(result.Data);
+        TempData["Success"] = "Your profile has been updated.";
+        return RedirectToAction(nameof(Profile));
+    }
+
+    /// <summary>Sends a new profile picture to the API, which stores it in Azure Blob Storage.</summary>
+    [HttpPost]
+    [RequireRole]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> ProfilePicture(IFormFile? picture)
+    {
+        if (picture is null || picture.Length == 0)
+        {
+            TempData["Error"] = "Please choose an image to upload.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        var result = await _api.UploadProfilePictureAsync(picture);
+        if (result.Succeeded && result.Data is not null)
+        {
+            _session.Update(result.Data);
+            TempData["Success"] = "Your profile picture has been updated.";
+        }
+        else
+        {
+            TempData["Error"] = result.ErrorMessage;
+        }
+        return RedirectToAction(nameof(Profile));
+    }
+
+    /// <summary>Streams the logged-in user's profile picture from the API.</summary>
+    [HttpGet]
+    [RequireRole]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Photo()
+    {
+        var image = await _api.GetProfilePictureAsync();
+        return image is null ? NotFound() : File(image.Content, image.ContentType);
+    }
+
+    [HttpGet]
     public IActionResult AccessDenied()
     {
         Response.StatusCode = StatusCodes.Status403Forbidden;
         return View();
+    }
+
+    /// <summary>Refills the fields the form does not post (email, role, picture) after a failed update.</summary>
+    private async Task<ProfileViewModel> WithReadOnlyFieldsAsync(ProfileViewModel model)
+    {
+        var profile = await _api.GetProfileAsync();
+        if (profile.Data is { } p)
+        {
+            model.Email = p.Email;
+            model.Role = p.Role;
+            model.MemberSince = p.CreatedAt;
+            model.HasProfilePicture = p.HasProfilePicture;
+        }
+        return model;
     }
 
     private IActionResult RedirectAfterLogin(string role, string? returnUrl) =>

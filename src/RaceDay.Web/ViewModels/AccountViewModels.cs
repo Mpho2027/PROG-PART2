@@ -51,3 +51,32 @@ public class RegisterViewModel
     [Display(Name = "I am joining as")]
     public string Role { get; set; } = Roles.Participant;
 }
+
+public class ProfileViewModel
+{
+    [Required(ErrorMessage = "Enter your full name.")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = "Full name must be between 2 and 100 characters.")]
+    [Display(Name = "Full name")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Phone(ErrorMessage = "Enter a valid phone number.")]
+    [StringLength(20)]
+    [Display(Name = "Phone number")]
+    public string? PhoneNumber { get; set; }
+
+    // Shown for information only; email and role cannot be changed.
+    public string Email { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public DateTime MemberSince { get; set; }
+    public bool HasProfilePicture { get; set; }
+
+    public static ProfileViewModel From(UserProfileDto p) => new()
+    {
+        FullName = p.FullName,
+        PhoneNumber = p.PhoneNumber,
+        Email = p.Email,
+        Role = p.Role,
+        MemberSince = p.CreatedAt,
+        HasProfilePicture = p.HasProfilePicture
+    };
+}

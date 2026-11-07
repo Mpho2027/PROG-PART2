@@ -1,0 +1,78 @@
+@using RaceDay.Web.Infrastructure
+@model ProfileViewModel
+@{
+    ViewData["Title"] = "My profile";
+}
+
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">@Model.Role</span>
+        <h1 class="race-heading">My profile</h1>
+        <p>Keep your details up to date so organisers can reach you.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <section class="panel text-center">
+            @if (Model.HasProfilePicture)
+            {
+                <img src="@Url.Action("Photo", new { v = DateTime.UtcNow.Ticks })" alt="Your profile picture" class="avatar avatar--lg mb-3" id="avatarPreview" />
+            }
+            else
+            {
+                <span class="avatar avatar--lg mb-3" aria-hidden="true">@Model.FullName.Substring(0, 1).ToUpperInvariant()</span>
+                <img alt="" class="avatar avatar--lg mb-3 d-none" id="avatarPreview" />
+            }
+            <h2 class="h4 mb-0">@Model.FullName</h2>
+            <p class="text-muted">@Model.Email</p>
+
+            <form asp-action="ProfilePicture" method="post" enctype="multipart/form-data" class="text-start">
+                <label for="picture" class="form-label">Profile picture</label>
+                <input type="file" id="picture" name="picture" class="form-control" required
+                       accept="image/jpeg,image/png,image/gif,image/webp" data-preview="#avatarPreview" />
+                <div class="form-text">JPG, PNG, GIF or WEBP, up to 5 MB.</div>
+                <button type="submit" class="btn btn-dark btn-icon w-100 justify-content-center mt-3">
+                    <span class="material-symbols-rounded" aria-hidden="true">upload</span>Upload picture
+                </button>
+            </form>
+        </section>
+    </div>
+
+    <div class="col-lg-8">
+        <section class="panel">
+            <h2 class="panel__title"><span class="material-symbols-rounded" aria-hidden="true">badge</span>Personal details</h2>
+            <form asp-action="Profile" method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="FullName" class="form-label"></label>
+                        <input asp-for="FullName" class="form-control" autocomplete="name" />
+                        <span asp-validation-for="FullName" class="field-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PhoneNumber" class="form-label"></label>
+                        <input asp-for="PhoneNumber" class="form-control" autocomplete="tel" />
+                        <span asp-validation-for="PhoneNumber" class="field-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email address</label>
+                        <input id="email" value="@Model.Email" class="form-control" disabled />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="role">Account type</label>
+                        <input id="role" value="@Model.Role" class="form-control" disabled />
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+                    <small class="text-muted">Member since @Display.Date(Model.MemberSince)</small>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -224,13 +224,16 @@ public class RaceDayApiClient
             // Not JSON: fall back to a message based on the status code.
         }
 
+        // 503 messages describe server configuration (for example missing storage settings); users get a plain message.
+        if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+            message = "Image uploads are not available right now. Please try again later.";
+
         message ??= fieldErrors.Count > 0
             ? "Please correct the highlighted fields."
             : response.StatusCode switch
             {
                 HttpStatusCode.NotFound => "That item could not be found.",
                 HttpStatusCode.Forbidden => "You do not have permission to do that.",
-                HttpStatusCode.ServiceUnavailable => "That service is temporarily unavailable. Please try again shortly.",
                 _ => "Something went wrong. Please try again."
             };
 
