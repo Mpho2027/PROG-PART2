@@ -18,7 +18,8 @@ entities = {
         ("UQ", "Email", "NVARCHAR(150)", None),
         ("", "PasswordHash", "NVARCHAR(255)", None),
         ("", "PhoneNumber", "NVARCHAR(20) NULL", None),
-        ("", "CreatedAt", "DATETIME", None)]),
+        ("", "CreatedAt", "DATETIME", None),
+        ("", "ProfileImageName", "NVARCHAR(200) NULL", "new")]),
     "Events": (860, 110, [
         ("PK", "EventID", "INT", None),
         ("FK", "OrganiserID", "INT", None),
@@ -28,7 +29,8 @@ entities = {
         ("", "Description", "NVARCHAR(MAX) NULL", None),
         ("", "DistanceKm", "DECIMAL(6,2)", "new"),
         ("CK", "EventType", "NVARCHAR(10)", "new"),
-        ("", "CreatedAt", "DATETIME", None)]),
+        ("", "CreatedAt", "DATETIME", None),
+        ("", "BannerImageName", "NVARCHAR(200) NULL", "new")]),
     "Categories": (1340, 110, [
         ("PK", "CategoryID", "INT", None),
         ("FK", "EventID", "INT", None),
@@ -68,8 +70,8 @@ def box(name):
 
 svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="Segoe UI, Helvetica, Arial, sans-serif">',
        f'<rect width="{W}" height="{H}" fill="#ffffff"/>',
-       f'<text x="40" y="52" font-size="26" font-weight="700" fill="{INK}">RaceDay – Entity Relationship Diagram</text>',
-       f'<text x="40" y="80" font-size="14" fill="{MUTED}">Version 2 · matches docs/RaceDay_Database_Schema.sql and the EF Core InitialCreate migration · crow\'s foot notation</text>']
+       f'<text x="40" y="52" font-size="26" font-weight="700" fill="{INK}">RaceDay Entity Relationship Diagram</text>',
+       f'<text x="40" y="80" font-size="14" fill="{MUTED}">Version 3 (Part 3) · matches docs/RaceDay_Database_Schema.sql and the EF Core migrations · crow\'s foot notation</text>']
 
 # ---- relationship lines (drawn first so boxes sit on top) ----
 def end_mark(x, y, dx, many, optional):
@@ -155,8 +157,8 @@ for name, (x, y, cols) in entities.items():
         colour = NEW if flag else INK
         svg.append(f'<text x="{x + 10}" y="{ry + 18}" font-size="12" font-weight="700" fill="{NAVY}">{key}</text>')
         weight = "700" if key.startswith("PK") else "400"
-        svg.append(f'<text x="{x + 66}" y="{ry + 18}" font-size="13.5" font-weight="{weight}" fill="{colour}">{col}</text>')
-        svg.append(f'<text x="{x + BW - 10}" y="{ry + 18}" font-size="12" fill="{colour if flag else MUTED}" text-anchor="end">{typ}</text>')
+        svg.append(f'<text x="{x + 60}" y="{ry + 18}" font-size="13.5" font-weight="{weight}" fill="{colour}">{col}</text>')
+        svg.append(f'<text x="{x + BW - 10}" y="{ry + 18}" font-size="{11.5 if len(typ) > 16 else 12}" fill="{colour if flag else MUTED}" text-anchor="end">{typ}</text>')
         if flag:
             svg.append(f'<circle cx="{x + BW + 0.5}" cy="{ry + ROW / 2}" r="4" fill="{NEW}"/>')
     if name in notes:
@@ -175,7 +177,7 @@ for i, ((many, opt), text) in enumerate(items):
 yy = ly + 56 + 4 * 30
 svg.append(f'<text x="{lx + 16}" y="{yy + 5}" font-size="12" fill="{MUTED}">PK primary key · FK foreign key · UQ unique · CK check</text>')
 svg.append(f'<circle cx="{lx + 22}" cy="{yy + 26}" r="4" fill="{NEW}"/>')
-svg.append(f'<text x="{lx + 34}" y="{yy + 31}" font-size="12" fill="{NEW}">added or changed in v2 (see README)</text>')
+svg.append(f'<text x="{lx + 34}" y="{yy + 31}" font-size="12" fill="{NEW}">added or changed since Part 1 (see README)</text>')
 
 svg.append('</svg>')
 open(out, "w").write("\n".join(svg))
