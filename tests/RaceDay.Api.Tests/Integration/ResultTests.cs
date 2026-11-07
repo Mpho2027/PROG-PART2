@@ -72,6 +72,28 @@ public class ResultTests : ApiTestBase
     }
 
     [Fact]
+    public async Task MyResults_ShowPositionOutOfTheFinishersInTheCategory()
+    {
+        var (organiser, organiserUser) = await LoggedInAsync("Organiser");
+        var (participant, p1) = await LoggedInAsync("Participant");
+        var (_, p2) = await LoggedInAsync("Participant");
+        var (_, p3) = await LoggedInAsync("Participant");
+        var (_, ids) = await SeedPastEnrolmentsAsync(organiserUser.UserId, p1.UserId, p2.UserId, p3.UserId);
+        await organiser.PostAsJsonAsync($"/api/enrolments/{ids[1]}/result", new { finishTime = "00:39:00", position = 1 });
+        var capture = await organiser.PostAsJsonAsync($"/api/enrolments/{ids[0]}/result", new { finishTime = "00:42:30", position = 2 });
+
+        Assert.Equal(2, (await ReadAsync<ResultDto>(capture)).Finishers);
+
+        var mine = await participant.GetFromJsonAsync<List<ResultDto>>("/api/users/me/results", Json);
+        var result = Assert.Single(mine!);
+        Assert.Equal(2, result.Position);
+        Assert.Equal(2, result.Finishers);
+        Assert.Equal("Completed Race", result.EventName);
+        Assert.Equal("10km", result.CategoryName);
+        Assert.Equal("00:42:30", result.FinishTime);
+    }
+
+    [Fact]
     public async Task CaptureResult_ForAMissingEnrolment_Returns404()
     {
         var (organiser, _) = await LoggedInAsync("Organiser");

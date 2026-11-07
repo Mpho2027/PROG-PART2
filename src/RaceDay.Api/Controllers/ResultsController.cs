@@ -66,6 +66,7 @@ public class ResultsController : RaceDayControllerBase
         await _db.SaveChangesAsync();
 
         var dto = ResultDto.From(result);
+        dto.Finishers = (await CountFinishersAsync(new[] { enrolment.CategoryId }))[enrolment.CategoryId];
         return isNew ? Created($"/api/categories/{enrolment.CategoryId}/results", dto) : Ok(dto);
     }
 
@@ -85,10 +86,11 @@ public class ResultsController : RaceDayControllerBase
             .Where(r => r.Enrolment.CategoryId == categoryId)
             .OrderBy(r => r.Position == null).ThenBy(r => r.Position).ThenBy(r => r.FinishTime)
             .ToListAsync();
-        return Ok(results.Select(ResultDto.From));
+        return Ok(await WithFinishersAsync(results));
     }
 
     /// <summary>Returns the logged-in Participant's own results across all events.</summary>
+    /// <remarks>Each result includes the number of finishers in its category, e.g. position 47 of 312.</remarks>
     /// <response code="200">Array of the Participant's results, most recent event first.</response>
     /// <response code="403">Only Participants have results.</response>
     [HttpGet("api/users/me/results")]
@@ -101,7 +103,30 @@ public class ResultsController : RaceDayControllerBase
             .Where(r => r.Enrolment.ParticipantId == participantId)
             .OrderByDescending(r => r.Enrolment.Category.Event.EventDate)
             .ToListAsync();
-        return Ok(results.Select(ResultDto.From));
+        return Ok(await WithFinishersAsync(results));
+    }
+
+    private async Task<List<ResultDto>> WithFinishersAsync(List<Result> results)
+    {
+        var finishers = await CountFinishersAsync(results.Select(r => r.Enrolment.CategoryId).Distinct().ToList());
+        return results.Select(r =>
+        {
+            var dto = ResultDto.From(r);
+            dto.Finishers = finishers.GetValueOrDefault(r.Enrolment.CategoryId);
+            return dto;
+        }).ToList();
+    }
+
+    /// <summary>Number of placed finishers per category.</summary>
+    private async Task<Dictionary<int, int>> CountFinishersAsync(IReadOnlyCollection<int> categoryIds)
+    {
+        var counts = await _db.Results
+            .Where(r => r.Position != null && categoryIds.Contains(r.Enrolment.CategoryId))
+            .GroupBy(r => r.Enrolment.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.CategoryId, x => x.Count);
+        foreach (var id in categoryIds) counts.TryAdd(id, 0);
+        return counts;
     }
 
     private IQueryable<Result> LoadResults() =>

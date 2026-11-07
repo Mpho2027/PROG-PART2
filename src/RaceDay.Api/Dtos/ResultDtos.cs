@@ -27,6 +27,10 @@ public class ResultDto
     /// <example>00:52:14</example>
     public string? FinishTime { get; set; }
     public int? Position { get; set; }
+
+    /// <summary>How many participants in the same category have a finishing position, e.g. 312 in "47th of 312".</summary>
+    public int Finishers { get; set; }
+
     public string Status { get; set; } = string.Empty;
     public int ParticipantId { get; set; }
     public string ParticipantName { get; set; } = string.Empty;
