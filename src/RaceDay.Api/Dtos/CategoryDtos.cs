@@ -54,6 +54,9 @@ public class CategoryDto
     public int EnrolledCount { get; set; }
     public int SpotsRemaining { get; set; }
 
+    /// <summary>Cancelled enrolments do not take up a place.</summary>
+    public static int ActiveEnrolments(Category c) => c.Enrolments.Count(en => en.Status != EnrolmentStatus.Cancelled);
+
     /// <summary>Requires Event and Enrolments to be loaded.</summary>
     public static CategoryDto From(Category c) => new()
     {
@@ -66,7 +69,7 @@ public class CategoryDto
         MaxAge = c.MaxAge,
         MaxParticipants = c.MaxParticipants,
         EntryFee = c.EntryFee,
-        EnrolledCount = c.Enrolments.Count,
-        SpotsRemaining = Math.Max(0, c.MaxParticipants - c.Enrolments.Count)
+        EnrolledCount = ActiveEnrolments(c),
+        SpotsRemaining = Math.Max(0, c.MaxParticipants - ActiveEnrolments(c))
     };
 }

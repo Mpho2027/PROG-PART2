@@ -24,7 +24,8 @@ public class RoleAccessTests : ApiTestBase
         { "GET", "/api/categories/1/enrolments" },
         { "GET", "/api/events/1/enrolments" },
         { "POST", "/api/enrolments/1/result" },
-        { "GET", "/api/users/me/events" }
+        { "GET", "/api/users/me/events" },
+        { "PUT", "/api/enrolments/1/status" }
     };
 
     /// <summary>Participant-only endpoints.</summary>

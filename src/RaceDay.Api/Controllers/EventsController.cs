@@ -96,7 +96,7 @@ public class EventsController : RaceDayControllerBase
                 EventType = e.EventType,
                 DistanceKm = e.DistanceKm,
                 CategoryCount = e.Categories.Count,
-                EnrolmentCount = e.Categories.SelectMany(c => c.Enrolments).Count(),
+                EnrolmentCount = e.Categories.SelectMany(c => c.Enrolments).Count(en => en.Status != EnrolmentStatus.Cancelled),
                 Capacity = e.Categories.Sum(c => c.MaxParticipants),
                 ResultsCaptured = e.Categories.SelectMany(c => c.Enrolments).Count(en => en.Result != null),
                 IsUpcoming = e.EventDate >= today

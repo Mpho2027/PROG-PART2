@@ -24,7 +24,7 @@ public class ResultsController : RaceDayControllerBase
     /// </remarks>
     /// <response code="201">Result created.</response>
     /// <response code="200">Existing result updated.</response>
-    /// <response code="400">Validation failed (e.g. finishTime not hh:mm:ss) or the event has not taken place yet.</response>
+    /// <response code="400">Validation failed (e.g. finishTime not hh:mm:ss), the event has not taken place yet, or the enrolment is cancelled.</response>
     /// <response code="403">Not a logged-in Organiser, or not the owner of the event.</response>
     /// <response code="404">The enrolment does not exist.</response>
     /// <response code="409">Another participant in this category already holds that position.</response>
@@ -47,6 +47,8 @@ public class ResultsController : RaceDayControllerBase
             return NotOwner("You can only capture results for events you organise.");
         if (enrolment.Category.Event.EventDate > Today)
             return BadRequestMessage("Results can only be captured on or after the event date.");
+        if (enrolment.Status == EnrolmentStatus.Cancelled)
+            return BadRequestMessage("Results cannot be captured for a cancelled enrolment.");
 
         var position = request.Position!.Value;
         var positionTaken = await _db.Results.AnyAsync(r =>

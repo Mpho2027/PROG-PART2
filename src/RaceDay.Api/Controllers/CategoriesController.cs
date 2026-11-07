@@ -82,8 +82,9 @@ public class CategoriesController : RaceDayControllerBase
             .SingleOrDefaultAsync(c => c.CategoryId == id);
         if (category is null) return NotFoundMessage($"Category {id} was not found.");
         if (category.Event.OrganiserId != CurrentUserId) return NotOwner("You can only update categories of events you organise.");
-        if (request.MaxParticipants < category.Enrolments.Count)
-            return BadRequestMessage($"maxParticipants cannot be lower than the {category.Enrolments.Count} participants already enrolled.");
+        var enrolled = CategoryDto.ActiveEnrolments(category);
+        if (request.MaxParticipants < enrolled)
+            return BadRequestMessage($"maxParticipants cannot be lower than the {enrolled} participants already enrolled.");
 
         Apply(category, request);
         await _db.SaveChangesAsync();

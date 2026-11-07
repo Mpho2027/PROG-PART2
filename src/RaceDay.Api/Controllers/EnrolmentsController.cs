@@ -22,6 +22,7 @@ public class EnrolmentsController : RaceDayControllerBase
     /// <remarks>
     /// No request body is needed: the Participant is taken from the session. A bib number is assigned automatically.
     /// A Participant may enter each category only once, and only while places remain and the event has not yet taken place.
+    /// Cancelled enrolments do not take up a place.
     /// </remarks>
     /// <response code="201">Enrolled. Returns the enrolment with its bib number.</response>
     /// <response code="400">The event has already taken place.</response>
@@ -44,7 +45,7 @@ public class EnrolmentsController : RaceDayControllerBase
         if (await _db.EventEnrolments.AnyAsync(en => en.CategoryId == categoryId && en.ParticipantId == participantId))
             return ConflictMessage("You are already enrolled in this category.");
 
-        var enrolled = await _db.EventEnrolments.CountAsync(en => en.CategoryId == categoryId);
+        var enrolled = await _db.EventEnrolments.CountAsync(en => en.CategoryId == categoryId && en.Status != EnrolmentStatus.Cancelled);
         if (enrolled >= category.MaxParticipants)
             return ConflictMessage("This category is full.");
 
@@ -53,7 +54,7 @@ public class EnrolmentsController : RaceDayControllerBase
             ParticipantId = participantId,
             CategoryId = categoryId,
             EnrolmentDate = DateTime.UtcNow,
-            Status = "Confirmed"
+            Status = EnrolmentStatus.Confirmed
         };
         _db.EventEnrolments.Add(enrolment);
         try
@@ -162,8 +163,51 @@ public class EnrolmentsController : RaceDayControllerBase
         return NoContent();
     }
 
+    /// <summary>Changes the status of an enrolment (Pending, Confirmed or Cancelled).</summary>
+    /// <remarks>
+    /// Only the Organiser of the enrolment's event may change its status. A cancelled enrolment no longer
+    /// takes up a place in the category. An enrolment that already has a result cannot be cancelled.
+    /// </remarks>
+    /// <response code="200">Status changed. Returns the updated enrolment.</response>
+    /// <response code="400">The status is not Pending, Confirmed or Cancelled.</response>
+    /// <response code="403">Not a logged-in Organiser, or not the owner of the event.</response>
+    /// <response code="404">The enrolment does not exist.</response>
+    /// <response code="409">The enrolment already has a result and cannot be cancelled.</response>
+    [HttpPut("api/enrolments/{id:int}/status")]
+    [Authorize(Roles = AppRoles.Organiser)]
+    [ProducesResponseType(typeof(EnrolmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateStatus(int id, EnrolmentStatusRequest request)
+    {
+        var status = EnrolmentStatus.Normalise(request.Status);
+        if (status is null)
+        {
+            ModelState.AddModelError(nameof(request.Status), "Status must be Pending, Confirmed or Cancelled.");
+            return ValidationProblem(ModelState);
+        }
+
+        var enrolment = await _db.EventEnrolments
+            .Include(en => en.Category).ThenInclude(c => c.Event)
+            .Include(en => en.Result)
+            .SingleOrDefaultAsync(en => en.EnrolmentId == id);
+        if (enrolment is null) return NotFoundMessage($"Enrolment {id} was not found.");
+        if (enrolment.Category.Event.OrganiserId != CurrentUserId)
+            return NotOwner("You can only manage enrolments for events you organise.");
+        if (status == EnrolmentStatus.Cancelled && enrolment.Result is not null)
+            return ConflictMessage("This enrolment already has a result and cannot be cancelled.");
+
+        enrolment.Status = status;
+        await _db.SaveChangesAsync();
+
+        var updated = await LoadEnrolments().SingleAsync(en => en.EnrolmentId == id);
+        return Ok(EnrolmentDto.From(updated));
+    }
+
     private IQueryable<EventEnrolment> LoadEnrolments() =>
         _db.EventEnrolments
+            .Include(en => en.Result)
             .Include(en => en.Participant)
             .Include(en => en.Category).ThenInclude(c => c.Event)
             .AsNoTracking();
