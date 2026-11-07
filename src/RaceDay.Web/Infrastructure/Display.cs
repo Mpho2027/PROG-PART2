@@ -44,7 +44,8 @@ public static class Display
 
     public static string Km(decimal km) => $"{km.ToString("0.##", CultureInfo.InvariantCulture)} km";
 
-    public static string Rand(decimal amount) => amount == 0 ? "Free" : "R" + amount.ToString("#,0.##", SouthAfrica);
+    public static string Rand(decimal amount) =>
+        amount == 0 ? "Free" : "R" + amount.ToString(amount % 1 == 0 ? "#,0" : "#,0.00", CultureInfo.InvariantCulture);
 
     public static string Date(DateTime date) => date.ToString("ddd, d MMMM yyyy", SouthAfrica);
 

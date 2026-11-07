@@ -1,0 +1,69 @@
+@using RaceDay.Web.Infrastructure
+@model EventFormViewModel
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="panel">
+            <h2 class="panel__title"><span class="material-symbols-rounded" aria-hidden="true">info</span>Event details</h2>
+            <div class="row g-3">
+                <div class="col-12">
+                    <label asp-for="EventName" class="form-label"></label>
+                    <input asp-for="EventName" class="form-control" maxlength="150" />
+                    <span asp-validation-for="EventName" class="field-error"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EventDate" class="form-label"></label>
+                    <input asp-for="EventDate" type="date" class="form-control" />
+                    <span asp-validation-for="EventDate" class="field-error"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EventType" class="form-label"></label>
+                    <select asp-for="EventType" class="form-select">
+                        <option value="">Choose a type</option>
+                        @foreach (var type in Enum.GetValues<EventType>())
+                        {
+                            <option value="@type">@Display.TypeLabel(type)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="EventType" class="field-error"></span>
+                </div>
+                <div class="col-md-8">
+                    <label asp-for="Location" class="form-label"></label>
+                    <input asp-for="Location" class="form-control" placeholder="Town or venue, province" maxlength="200" />
+                    <span asp-validation-for="Location" class="field-error"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="DistanceKm" class="form-label"></label>
+                    <input asp-for="DistanceKm" type="number" step="0.1" min="0.1" class="form-control" />
+                    <span asp-validation-for="DistanceKm" class="field-error"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="5" maxlength="4000"
+                              placeholder="Route, start time, parking, what to bring..."></textarea>
+                    <span asp-validation-for="Description" class="field-error"></span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-4">
+        <section class="panel">
+            <h2 class="panel__title"><span class="material-symbols-rounded" aria-hidden="true">image</span>Banner image</h2>
+            @if (Model.HasBanner && Model.EventId.HasValue)
+            {
+                <img src="@Url.Action("Banner", "Events", new { area = "", id = Model.EventId, v = DateTime.UtcNow.Ticks })" alt="Current banner" class="banner-preview mb-3" id="bannerPreview" />
+                <p class="small text-muted">Choose a new image to replace the current banner.</p>
+            }
+            else
+            {
+                <img alt="" class="banner-preview mb-3 d-none" id="bannerPreview" />
+                <p class="small text-muted">Shown at the top of the event page and on the event card.</p>
+            }
+            <input asp-for="BannerImage" type="file" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" data-preview="#bannerPreview" />
+            <div class="form-text">JPG, PNG, GIF or WEBP, up to 5 MB. Stored in Azure Blob Storage.</div>
+            <span asp-validation-for="BannerImage" class="field-error"></span>
+        </section>
+    </div>
+</div>

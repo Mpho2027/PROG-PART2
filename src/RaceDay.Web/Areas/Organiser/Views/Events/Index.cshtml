@@ -1,0 +1,70 @@
+@using RaceDay.Web.Infrastructure
+@model List<OrganiserEventSummaryDto>
+@{
+    ViewData["Title"] = "My events";
+}
+
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">Event management</span>
+        <h1 class="race-heading">My events</h1>
+        <p>Create, edit and delete your events, and manage their categories, enrolments and results.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-icon">
+        <span class="material-symbols-rounded" aria-hidden="true">add</span>Create event
+    </a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="panel empty-state">
+        <span class="material-symbols-rounded" aria-hidden="true">event</span>
+        <h2>No events yet</h2>
+        <p class="mb-3">Your events will be listed here once you create them.</p>
+        <a asp-action="Create" class="btn btn-primary">Create event</a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        @foreach (var e in Model)
+        {
+            <div class="col">
+                <article class="event-card">
+                    <div class="event-banner event-banner--@e.EventType @(e.HasBanner ? "" : "event-banner--placeholder")">
+                        <span class="date-chip"><strong>@e.EventDate.Day</strong><small>@Display.Month(e.EventDate)</small></span>
+                        @if (e.HasBanner)
+                        {
+                            <img src="@Url.Action("Banner", "Events", new { area = "", id = e.EventId })" alt="" loading="lazy" />
+                        }
+                        else
+                        {
+                            <span class="material-symbols-rounded">@Display.TypeIcon(e.EventType)</span>
+                        }
+                    </div>
+                    <div class="event-card__body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <partial name="_EventTypeBadge" model="e.EventType" />
+                            <span class="status-badge status-badge--@(e.IsUpcoming ? "Upcoming" : "Past")">@(e.IsUpcoming ? Display.DaysAway(e.EventDate) : "Completed")</span>
+                        </div>
+                        <h2 class="event-card__title">
+                            <a asp-area="" asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId">@e.EventName</a>
+                        </h2>
+                        <div class="event-card__meta">
+                            <span><span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>@Display.Date(e.EventDate)</span>
+                            <span><span class="material-symbols-rounded" aria-hidden="true">location_on</span>@e.Location &middot; @Display.Km(e.DistanceKm)</span>
+                            <span><span class="material-symbols-rounded" aria-hidden="true">groups</span>@e.EnrolmentCount of @e.Capacity places taken in @e.CategoryCount categor@(e.CategoryCount == 1 ? "y" : "ies")</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-auto">
+                            <a asp-action="Edit" asp-route-id="@e.EventId" class="btn btn-sm btn-dark">Edit</a>
+                            <a asp-controller="Categories" asp-action="Index" asp-route-eventId="@e.EventId" class="btn btn-sm btn-outline-primary">Categories</a>
+                            <a asp-controller="Enrolments" asp-action="Index" asp-route-eventId="@e.EventId" class="btn btn-sm btn-outline-primary">Enrolments</a>
+                            <a asp-controller="Results" asp-action="Index" asp-route-eventId="@e.EventId" class="btn btn-sm btn-outline-primary">Results</a>
+                            <a asp-action="Delete" asp-route-id="@e.EventId" class="btn btn-sm btn-outline-danger ms-auto">Delete</a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        }
+    </div>
+}

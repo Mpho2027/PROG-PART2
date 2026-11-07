@@ -1,0 +1,25 @@
+@using RaceDay.Web.Infrastructure
+@model EventDto
+@{
+    ViewData["Title"] = $"Delete {Model.EventName}";
+    var entries = (int)(ViewBag.Entries ?? 0);
+}
+
+<div class="message-page">
+    <span class="material-symbols-rounded message-page__icon" aria-hidden="true">delete</span>
+    <h1 class="race-heading">Delete this event?</h1>
+    <p class="fs-5 fw-semibold mb-1">@Model.EventName</p>
+    <p class="text-muted">@Display.Date(Model.EventDate) &middot; @Model.Location</p>
+    @if (entries > 0)
+    {
+        <div class="alert alert-danger text-start" role="alert">
+            <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+            <span>@entries participant@(entries == 1 ? " has" : "s have") entered this event. Their enrolments, results and the event's categories will be deleted too.</span>
+        </div>
+    }
+    <form asp-action="Delete" asp-route-id="@Model.EventId" method="post" class="d-flex justify-content-center gap-2 mt-3">
+        <input type="hidden" name="eventName" value="@Model.EventName" />
+        <a asp-action="Edit" asp-route-id="@Model.EventId" class="btn btn-light">Keep event</a>
+        <button type="submit" class="btn btn-danger">Delete event</button>
+    </form>
+</div>

@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using RaceDay.Web.Filters;
 using RaceDay.Web.Services;
 
@@ -40,6 +42,15 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/Home/StatusCode", "?code={0}");
+
+// Fixed culture so "42.2" in a number field always means 42.2 km, whatever the server's regional settings are.
+var formCulture = CultureInfo.GetCultureInfo("en-GB");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(formCulture),
+    SupportedCultures = new[] { formCulture },
+    SupportedUICultures = new[] { formCulture }
+});
 
 app.UseStaticFiles();
 app.UseRouting();

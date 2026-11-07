@@ -1,0 +1,25 @@
+@model EventFormViewModel
+@{
+    ViewData["Title"] = "Create event";
+}
+
+<a asp-action="Index" class="breadcrumb-link"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>My events</a>
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">New event</span>
+        <h1 class="race-heading">Create an event</h1>
+        <p>Fill in the details. You can add distance or age categories on the next step.</p>
+    </div>
+</div>
+
+<form asp-action="Create" method="post" enctype="multipart/form-data" novalidate>
+    <partial name="_EventForm" model="Model" />
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <a asp-action="Index" class="btn btn-light">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-lg">Create event</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

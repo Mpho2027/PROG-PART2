@@ -1,0 +1,30 @@
+@model EventFormViewModel
+@{
+    ViewData["Title"] = $"Edit {Model.EventName}";
+}
+
+<a asp-action="Index" class="breadcrumb-link"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>My events</a>
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">Edit event</span>
+        <h1 class="race-heading">@Model.EventName</h1>
+    </div>
+    <partial name="_EventActions" model="Model.EventId!.Value" />
+</div>
+
+<form asp-action="Edit" asp-route-id="@Model.EventId" method="post" enctype="multipart/form-data" novalidate>
+    <partial name="_EventForm" model="Model" />
+    <div class="d-flex flex-wrap justify-content-between gap-2 mt-4">
+        <a asp-action="Delete" asp-route-id="@Model.EventId" class="btn btn-outline-danger btn-icon">
+            <span class="material-symbols-rounded" aria-hidden="true">delete</span>Delete event
+        </a>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-light">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">Save changes</button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
