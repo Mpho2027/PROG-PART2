@@ -12,7 +12,6 @@
 .config/
 docs/
 tests/
-tools/
 README.md
 docker-compose*.yml
 **/Dockerfile*

@@ -1,13 +1,5 @@
-# Starts the whole RaceDay system with one command:
-#   docker compose up --build
-#
-#   MVC web app      http://localhost:8080
-#   API (Swagger)    http://localhost:5104/swagger
-#   Blob storage     Azurite (local Azure Blob Storage emulator) on port 10000
-#
-# To store images in a real Azure Storage account instead of Azurite, set AZURE_STORAGE_CONNECTION_STRING
-# in your shell or in a .env file next to this file (never commit that file).
-# The API uses an in-memory database here, so data is reset when the containers stop.
+# Runs the API, the MVC website and Azurite (local blob storage) together: docker compose up --build
+# Website: http://localhost:8080   API: http://localhost:5104/swagger
 
 services:
   azurite:
@@ -22,7 +14,7 @@ services:
       dockerfile: src/RaceDay.Api/Dockerfile
     environment:
       Database__Provider: InMemory
-      # Default: Azurite's published development account (from Microsoft's Azurite documentation, not a secret).
+      # Azurite's standard development account. Set AZURE_STORAGE_CONNECTION_STRING to use a real Azure account.
       BlobStorage__ConnectionString: ${AZURE_STORAGE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;}
     ports:
       - "5104:8080"
