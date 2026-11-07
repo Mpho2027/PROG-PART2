@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using RaceDay.Api.Auth;
 using RaceDay.Api.Data;
 using RaceDay.Api.Models;
+using RaceDay.Api.Storage;
 using RaceDay.Api.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,12 @@ builder.Services.AddDbContext<RaceDayDbContext>(options =>
     else
         options.UseSqlServer(builder.Configuration.GetConnectionString("RaceDayDB"));
 });
+
+// ---------- Azure Blob Storage (event banners and profile pictures) ----------
+// The connection string comes from user secrets or the BlobStorage__ConnectionString environment variable,
+// so the storage account key is never committed to the repository.
+builder.Services.Configure<BlobStorageOptions>(builder.Configuration.GetSection(BlobStorageOptions.SectionName));
+builder.Services.AddSingleton<IImageStorage, BlobImageStorage>();
 
 // ---------- Password hashing (PBKDF2 + salt, from ASP.NET Core Identity) ----------
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
