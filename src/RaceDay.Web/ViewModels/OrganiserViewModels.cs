@@ -134,3 +134,13 @@ public class CategoriesPageViewModel
     public EventDto Event { get; set; } = new();
     public IReadOnlyList<CategoryDto> Categories { get; set; } = Array.Empty<CategoryDto>();
 }
+
+public class EventEnrolmentsViewModel
+{
+    public EventDto Event { get; set; } = new();
+    public IReadOnlyList<CategoryDto> Categories { get; set; } = Array.Empty<CategoryDto>();
+    public IReadOnlyList<EnrolmentDto> AllEnrolments { get; set; } = Array.Empty<EnrolmentDto>();
+    public IReadOnlyList<EnrolmentDto> Enrolments { get; set; } = Array.Empty<EnrolmentDto>();
+    public int? CategoryId { get; set; }
+    public string? Status { get; set; }
+}

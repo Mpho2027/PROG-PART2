@@ -1,0 +1,103 @@
+@using RaceDay.Web.Infrastructure
+@model EventEnrolmentsViewModel
+@{
+    var ev = Model.Event;
+    ViewData["Title"] = $"Enrolments for {ev.EventName}";
+}
+
+<a asp-controller="Events" asp-action="Index" class="breadcrumb-link"><span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>My events</a>
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">@ev.EventName &middot; @Display.ShortDate(ev.EventDate)</span>
+        <h1 class="race-heading">Enrolments</h1>
+        <p>@Model.AllEnrolments.Count participant@(Model.AllEnrolments.Count == 1 ? "" : "s") entered across @Model.Categories.Count categor@(Model.Categories.Count == 1 ? "y" : "ies").</p>
+    </div>
+    <partial name="_EventActions" model="ev.EventId" />
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+    @foreach (var s in EnrolmentStatuses.All)
+    {
+        <span class="status-badge status-badge--@s">
+            <span class="material-symbols-rounded" aria-hidden="true">@Display.StatusIcon(s)</span>@Model.AllEnrolments.Count(e => e.Status == s) @s.ToLowerInvariant()
+        </span>
+    }
+</div>
+
+<section class="panel">
+    <form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+        <input type="hidden" name="eventId" value="@ev.EventId" />
+        <div class="col-sm-5 col-lg-4">
+            <label for="categoryId" class="form-label">Category</label>
+            <select name="categoryId" id="categoryId" class="form-select" data-autosubmit>
+                <option value="">All categories</option>
+                @foreach (var c in Model.Categories)
+                {
+                    <option value="@c.CategoryId" selected="@(Model.CategoryId == c.CategoryId)">@c.CategoryName (@c.EnrolledCount)</option>
+                }
+            </select>
+        </div>
+        <div class="col-sm-4 col-lg-3">
+            <label for="status" class="form-label">Status</label>
+            <select name="status" id="status" class="form-select" data-autosubmit>
+                <option value="">All statuses</option>
+                @foreach (var s in EnrolmentStatuses.All)
+                {
+                    <option value="@s" selected="@(Model.Status == s)">@s</option>
+                }
+            </select>
+        </div>
+        <noscript><div class="col-auto"><button type="submit" class="btn btn-dark">Filter</button></div></noscript>
+    </form>
+
+    @if (Model.Enrolments.Count == 0)
+    {
+        <div class="empty-state">
+            <span class="material-symbols-rounded" aria-hidden="true">group_off</span>
+            <h2>@(Model.AllEnrolments.Count == 0 ? "No one has entered yet" : "No enrolments match")</h2>
+            <p class="mb-0">@(Model.AllEnrolments.Count == 0 ? "Enrolments appear here as soon as participants enter." : "Try a different category or status.")</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table rd-table">
+                <thead>
+                    <tr><th>Participant</th><th>Category</th><th>Bib</th><th>Status</th><th>Entered</th><th>Result</th><th>Change status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model.Enrolments)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@e.ParticipantName</div>
+                                <a href="mailto:@e.ParticipantEmail" class="small">@e.ParticipantEmail</a>
+                            </td>
+                            <td>@e.CategoryName</td>
+                            <td><span class="bib">@e.BibNumber</span></td>
+                            <td><partial name="_StatusBadge" model="e.Status" /></td>
+                            <td class="small text-muted">@Display.ShortDate(e.EnrolmentDate.ToLocalTime())</td>
+                            <td class="small">@(e.HasResult ? $"{e.FinishTime} · {Display.Ordinal(e.Position ?? 0)}" : "-")</td>
+                            <td>
+                                <form asp-action="UpdateStatus" asp-route-id="@e.EnrolmentId" method="post" class="d-flex gap-1">
+                                    <input type="hidden" name="eventId" value="@ev.EventId" />
+                                    <input type="hidden" name="participantName" value="@e.ParticipantName" />
+                                    <input type="hidden" name="categoryId" value="@Model.CategoryId" />
+                                    <input type="hidden" name="filterStatus" value="@Model.Status" />
+                                    <label class="visually-hidden" for="status-@e.EnrolmentId">Status for @e.ParticipantName</label>
+                                    <select name="status" id="status-@e.EnrolmentId" class="form-select form-select-sm" data-autosubmit>
+                                        @foreach (var s in EnrolmentStatuses.All)
+                                        {
+                                            <option value="@s" selected="@(e.Status == s)">@s</option>
+                                        }
+                                    </select>
+                                    <noscript><button type="submit" class="btn btn-sm btn-dark">Save</button></noscript>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
