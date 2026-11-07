@@ -1,0 +1,97 @@
+@using RaceDay.Web.Infrastructure
+@model List<EnrolmentDto>
+@{
+    ViewData["Title"] = "My enrolments";
+    var upcoming = Model.Where(e => e.EventDate.Date >= DateTime.Today).OrderBy(e => e.EventDate).ToList();
+    var past = Model.Where(e => e.EventDate.Date < DateTime.Today).OrderByDescending(e => e.EventDate).ToList();
+}
+
+<div class="page-header">
+    <div>
+        <span class="page-header__eyebrow">Participant</span>
+        <h1 class="race-heading">My enrolments</h1>
+        <p>Every event you have entered and the status of each entry.</p>
+    </div>
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-primary btn-icon">
+        <span class="material-symbols-rounded" aria-hidden="true">add</span>Enter another event
+    </a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="panel empty-state">
+        <span class="material-symbols-rounded" aria-hidden="true">confirmation_number</span>
+        <h2>No entries yet</h2>
+        <p class="mb-3">Browse the upcoming events and pick a category to enter.</p>
+        <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-primary">Find an event</a>
+    </div>
+}
+else
+{
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        @foreach (var status in EnrolmentStatuses.All)
+        {
+            var count = Model.Count(e => e.Status == status);
+            if (count > 0)
+            {
+                <span class="status-badge status-badge--@status">@count @status.ToLowerInvariant()</span>
+            }
+        }
+    </div>
+
+    @foreach (var (title, rows, isUpcoming) in new[] { ("Upcoming", upcoming, true), ("Past events", past, false) })
+    {
+        if (rows.Count == 0) continue;
+        <section class="panel">
+            <h2 class="panel__title">
+                <span class="material-symbols-rounded" aria-hidden="true">@(isUpcoming ? "event_upcoming" : "history")</span>@title
+            </h2>
+            <div class="table-responsive">
+                <table class="table rd-table">
+                    <thead>
+                        <tr><th>Event</th><th>Category</th><th>Bib</th><th>Status</th><th>Entered</th><th class="text-end"></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in rows)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-area="" asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId" class="fw-semibold">@e.EventName</a>
+                                    <div class="small text-muted">@Display.Date(e.EventDate)</div>
+                                </td>
+                                <td>@e.CategoryName</td>
+                                <td><span class="bib">@e.BibNumber</span></td>
+                                <td>
+                                    @if (e.HasResult)
+                                    {
+                                        <partial name="_StatusBadge" model="@("Finished")" />
+                                        <div class="small text-muted mt-1">@e.FinishTime@(e.Position.HasValue ? $" · {Display.Ordinal(e.Position.Value)}" : "")</div>
+                                    }
+                                    else
+                                    {
+                                        <partial name="_StatusBadge" model="e.Status" />
+                                    }
+                                </td>
+                                <td class="small text-muted">@Display.ShortDate(e.EnrolmentDate.ToLocalTime())</td>
+                                <td class="text-end">
+                                    @if (isUpcoming && !e.HasResult)
+                                    {
+                                        <form asp-action="Withdraw" asp-route-id="@e.EnrolmentId" method="post" class="d-inline"
+                                              data-confirm="Withdraw from @e.EventName (@e.CategoryName)? Your place will be given up.">
+                                            <input type="hidden" name="eventName" value="@e.EventName" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Withdraw</button>
+                                        </form>
+                                    }
+                                    else if (e.HasResult)
+                                    {
+                                        <a asp-controller="Results" asp-action="Index" class="btn btn-sm btn-light">My result</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+}

@@ -14,6 +14,27 @@ public class EnrolmentsController : Controller
 
     public EnrolmentsController(RaceDayApiClient api) => _api = api;
 
+    /// <summary>All events the participant has entered, with their enrolment status.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        var result = await _api.GetMyEnrolmentsAsync();
+        if (!result.Succeeded) TempData["Error"] = result.ErrorMessage;
+        return View(result.Data ?? new List<EnrolmentDto>());
+    }
+
+    /// <summary>Withdraws from an event. The API only allows this for the participant's own enrolments without a result.</summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Withdraw(int id, string? eventName)
+    {
+        var result = await _api.WithdrawAsync(id);
+        TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded
+            ? $"You have withdrawn from {eventName ?? "the event"}."
+            : result.ErrorMessage;
+        return RedirectToAction(nameof(Index));
+    }
+
     /// <summary>Enters the participant into the chosen category. The API records it straight away and assigns a bib number.</summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
